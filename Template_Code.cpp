@@ -14,14 +14,6 @@ bool validatePassword(string pwd) {
     return false;}
 }
 
-int main(){;
-     
-    cout << validatePassword("123456") << endl; 
-    cout << validatePassword("123") << endl;    
-    
-    return 0;
-
-}
 // ========================
 //       USER CLASS
 // ========================
