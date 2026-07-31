@@ -19,41 +19,55 @@ public:
     User() {
         // TODO: Implement default constructor
         // FR5 HOOK (please call at end): updateLastSeen();
+        username = "";
+        password = "";
+        phoneNumber = "";
+        status = "Hey there! I am using WhatsApp.";
+        updateLastSeen();
     }
 
     User(string uname, string pwd, string phone) {
         // TODO: Implement parameterized constructor
         // FR5 HOOK (please call at end): updateLastSeen();
+        username = uname;
+        password = pwd;
+        phoneNumber = phone;
+        status = "Hey there! I am using WhatsApp.";
+        updateLastSeen();
     }
 
     string getUsername() const {
         // TODO: Implement getter
-        return "";
+        return username;
     }
 
     string getPhoneNumber() const {
         // TODO: Implement getter
-        return "";
+        return phoneNumber;
     }
 
     string getStatus() const {
         // TODO: Implement getter
-        return "";
+        return status;
     }
 
     string getLastSeen() const {
         // TODO: Implement getter
-        return "";
+        return lastSeen;
     }
 
     void setStatus(string newStatus) {
         // TODO: Implement setter
         // FR5 HOOK (please call at end): updateLastSeen();
+        status = newStatus;
+        updateLastSeen();
     }
 
     void setPhoneNumber(string phone) {
         // TODO: Implement setter
         // FR5 HOOK (please call at end): updateLastSeen();
+        phoneNumber = phone;
+        updateLastSeen();
     }
 
     // ---- FR5: this method is mine ----
@@ -66,12 +80,14 @@ public:
 
     bool checkPassword(string pwd) const {
         // TODO: Implement password check
-        return false;
+        return password == pwd;
     }
 
     void changePassword(string newPwd) {
         // TODO: Implement password change
         // FR5 HOOK (please call at end): updateLastSeen();
+        password = newPwd;
+        updateLastSeen();
     }
 };
 
@@ -278,6 +294,58 @@ public:
 
     void signUp() {
         // TODO: Implement user registration
+        User newUser;
+        string uname, pwd, phone;
+        bool IsValidPassword = false;
+        bool IsValidUsername = false;
+        bool IsValidPhone = false;
+        bool IsValidUserInputs = false;
+        cout << "Enter username: ";
+        cin >> uname;
+        cout << "Enter password: ";
+        cin >> pwd;
+        cout << "Enter phone number: ";
+        cin >> phone;
+        IsValidPassword = validatePassword(pwd);
+        IsValidUsername = validateUsername(uname);
+        IsValidPhone = validatePhone(phone);
+        IsValidUserInputs = IsValidPassword && IsValidUsername && IsValidPhone;
+        if (IsValidUserInputs) {
+            newUser = User(uname, pwd, phone);
+            users.push_back(newUser);
+        }
+    }
+
+    bool validateUsername(string uname) {
+        // TODO: Implement username validation (FR2)
+        return true;
+    }
+
+    bool validatePassword(string pwd) {
+        // TODO: Implement password validation (FR3)
+        return true;
+    }
+    
+    bool validatePhone(string phone) {
+  
+        if (phone.length() != 11) {
+            cout << "Phone number must be 11 digits long." << endl;
+            return false;
+        }
+        else if (phone[0] != '0' || phone[1] != '1') {
+            cout << "Phone number must start with '01'." << endl;
+            return false;
+        }
+        else {
+            for (const auto& user : users) {
+                if (user.getPhoneNumber() == phone) {
+                    cout << "Phone number already exists. Please use a different phone number." << endl;
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     void login() {
