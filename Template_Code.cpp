@@ -40,13 +40,11 @@ public:
     }
     
     string getPhoneNumber() const {
-        // TODO: Implement getter
-        return "";
+        return phoneNumber;
     }
     
     string getStatus() const {
-        // TODO: Implement getter
-        return "";
+         return status;
     }
     
     string getLastSeen() const {
@@ -55,12 +53,12 @@ public:
     }
     
     void setStatus(string newStatus) {
-        // TODO: Implement setter
+            status = newStatus;
     }
     
     void setPhoneNumber(string phone) {
-        // TODO: Implement setter
-    }
+    phoneNumber = phone;
+   }
     
     void updateLastSeen() {
         // TODO: Implement last seen update
