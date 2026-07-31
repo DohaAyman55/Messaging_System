@@ -62,7 +62,13 @@ public:
     }
     
     void changePassword(string newPwd) {
-        // TODO: Implement password change
+        while(!validatePassword(newPwd)){
+            cout << "Invalid Password. Try Again.";
+            cin >> newPwd;
+        }
+
+        this->password = newPwd;
+        return;
     }
 };
 
@@ -275,11 +281,6 @@ public:
         // TODO: Implement username validation (FR2)
         return true;
     }
-
-    bool validatePassword(string pwd) {
-        // TODO: Implement password validation (FR3)
-        return true;
-    }
     
     bool validatePhone(string phone) {
   
@@ -347,6 +348,12 @@ public:
         }
     }
 };
+
+// HELPER FUNCTION
+bool validatePassword(string pwd) {
+    // TODO: Implement password validation (FR3)
+    return true;
+}
 
 // ========================
 //          MAIN
