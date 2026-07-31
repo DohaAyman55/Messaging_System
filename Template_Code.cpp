@@ -283,10 +283,15 @@ public:
     
     void signUp() {
         // TODO: Implement user registration
+        // use validateUsername() to check username uniqueness
     }
     
     bool validateUsername(string uname) {
-        // TODO: Implement username validation (FR2)
+        for(User user: users){
+            if(user.getUsername() == uname){
+                return false;
+            }
+        }
         return true;
     }
     
