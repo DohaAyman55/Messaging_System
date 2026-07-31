@@ -271,6 +271,38 @@ public:
         // TODO: Implement user registration
     }
     
+    bool validateUsername(string uname) {
+        // TODO: Implement username validation (FR2)
+        return true;
+    }
+
+    bool validatePassword(string pwd) {
+        // TODO: Implement password validation (FR3)
+        return true;
+    }
+    
+    bool validatePhone(string phone) {
+  
+        if (phone.length() != 11) {
+            cout << "Phone number must be 11 digits long." << endl;
+            return false;
+        }
+        else if (phone[0] != '0' || phone[1] != '1') {
+            cout << "Phone number must start with '01'." << endl;
+            return false;
+        }
+        else {
+            for (const auto& user : users) {
+                if (user.getPhoneNumber() == phone) {
+                    cout << "Phone number already exists. Please use a different phone number." << endl;
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+    
     void login() {
         // TODO: Implement user login
     }
