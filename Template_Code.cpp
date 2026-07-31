@@ -2,7 +2,14 @@
 #include <vector>
 #include <string>
 #include <ctime>
+#include <limits>
 using namespace std;
+
+// HELPER FUNCTION
+bool validatePassword(string pwd) {
+    // TODO: Implement password validation (FR3)
+    return true;
+}
 
 // ========================
 //       USER CLASS
@@ -62,7 +69,14 @@ public:
     }
     
     void changePassword(string newPwd) {
-        // TODO: Implement password change
+        while(!validatePassword(newPwd)){
+            cout << "Invalid Password. Try Again." << endl;
+            getline(cin, newPwd);
+        }
+
+        this->password = newPwd;
+        cout << "Password Changed Successfully!" << endl;
+        return;
     }
 };
 
@@ -275,11 +289,6 @@ public:
         // TODO: Implement username validation (FR2)
         return true;
     }
-
-    bool validatePassword(string pwd) {
-        // TODO: Implement password validation (FR3)
-        return true;
-    }
     
     bool validatePhone(string phone) {
   
@@ -335,14 +344,22 @@ public:
                 else if (choice == 3) break;
             }
             else {
-                cout << "\n1. Start Private Chat\n2. Create Group\n3. View Chats\n4. Logout\nChoice: ";
+                cout << "\n1. Start Private Chat\n2. Create Group\n3. View Chats\n4. Change Password\n5. Logout\nChoice: ";
                 int choice;
                 cin >> choice;
                 
                 if (choice == 1) startPrivateChat();
                 else if (choice == 2) createGroup();
                 else if (choice == 3) viewChats();
-                else if (choice == 4) logout();
+                else if (choice == 4) {
+                    string newPass;
+                    // TODO: Passwords must not be displayed when typing
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n'); // flush buffer
+                    cout << "Enter new password: " << endl;
+                    getline(cin, newPass);
+                    users[currentUserIndex].changePassword(newPass);
+                }
+                else if (choice == 5) logout();
             }
         }
     }
