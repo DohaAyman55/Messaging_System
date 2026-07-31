@@ -8,9 +8,20 @@ using namespace std;
 // HELPER FUNCTION
 bool validatePassword(string pwd) {
     // TODO: Implement password validation (FR3)
-    return true;
+   if (pwd.length() >= 6){
+        return true;
+    }else{
+    return false;}
 }
 
+int main(){;
+     
+    cout << validatePassword("123456") << endl; 
+    cout << validatePassword("123") << endl;    
+    
+    return 0;
+
+}
 // ========================
 //       USER CLASS
 // ========================
