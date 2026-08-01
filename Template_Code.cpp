@@ -2,7 +2,17 @@
 #include <vector>
 #include <string>
 #include <ctime>
+#include <limits>
 using namespace std;
+
+// HELPER FUNCTION
+bool validatePassword(string pwd) {
+    // TODO: Implement password validation (FR3)
+   if (pwd.length() >= 6){
+        return true;
+    }else{
+    return false;}
+}
 
 // ========================
 //       USER CLASS
@@ -30,13 +40,11 @@ public:
     }
     
     string getPhoneNumber() const {
-        // TODO: Implement getter
-        return "";
+        return phoneNumber;
     }
     
     string getStatus() const {
-        // TODO: Implement getter
-        return "";
+         return status;
     }
     
     string getLastSeen() const {
@@ -45,12 +53,12 @@ public:
     }
     
     void setStatus(string newStatus) {
-        // TODO: Implement setter
+            status = newStatus;
     }
     
     void setPhoneNumber(string phone) {
-        // TODO: Implement setter
-    }
+    phoneNumber = phone;
+   }
     
     void updateLastSeen() {
         // TODO: Implement last seen update
@@ -63,11 +71,12 @@ public:
     
     void changePassword(string newPwd) {
         while(!validatePassword(newPwd)){
-            cout << "Invalid Password. Try Again.";
-            cin >> newPwd;
+            cout << "Invalid Password. Try Again." << endl;
+            getline(cin, newPwd);
         }
 
         this->password = newPwd;
+        cout << "Password Changed Successfully!" << endl;
         return;
     }
 };
@@ -275,10 +284,15 @@ public:
     
     void signUp() {
         // TODO: Implement user registration
+        // use validateUsername() to check username uniqueness
     }
     
     bool validateUsername(string uname) {
-        // TODO: Implement username validation (FR2)
+        for(User user: users){
+            if(user.getUsername() == uname){
+                return false;
+            }
+        }
         return true;
     }
     
@@ -336,14 +350,22 @@ public:
                 else if (choice == 3) break;
             }
             else {
-                cout << "\n1. Start Private Chat\n2. Create Group\n3. View Chats\n4. Logout\nChoice: ";
+                cout << "\n1. Start Private Chat\n2. Create Group\n3. View Chats\n4. Change Password\n5. Logout\nChoice: ";
                 int choice;
                 cin >> choice;
                 
                 if (choice == 1) startPrivateChat();
                 else if (choice == 2) createGroup();
                 else if (choice == 3) viewChats();
-                else if (choice == 4) logout();
+                else if (choice == 4) {
+                    string newPass;
+                    // TODO: Passwords must not be displayed when typing
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n'); // flush buffer
+                    cout << "Enter new password: " << endl;
+                    getline(cin, newPass);
+                    users[currentUserIndex].changePassword(newPass);
+                }
+                else if (choice == 5) logout();
             }
         }
     }
