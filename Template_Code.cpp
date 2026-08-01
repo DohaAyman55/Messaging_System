@@ -2,7 +2,18 @@
 #include <vector>
 #include <string>
 #include <ctime>
+#include <limits>
 using namespace std;
+
+// HELPER FUNCTION
+bool validatePassword(string pwd) {
+    // FR3: password must be at least 6 characters
+    if (pwd.length() >= 6) {
+        return true;
+    } else {
+        return false;
+    }
+}
 
 // ========================
 //       USER CLASS
@@ -32,13 +43,11 @@ public:
     }
 
     string getPhoneNumber() const {
-        // TODO: Implement getter
-        return "";
+        return phoneNumber;
     }
 
     string getStatus() const {
-        // TODO: Implement getter
-        return "";
+        return status;
     }
 
     string getLastSeen() const {
@@ -47,13 +56,13 @@ public:
     }
 
     void setStatus(string newStatus) {
-        // TODO: Implement setter
-        // FR5 HOOK (please call at end): updateLastSeen();
+        status = newStatus;
+        updateLastSeen(); // FR5
     }
 
     void setPhoneNumber(string phone) {
-        // TODO: Implement setter
-        // FR5 HOOK (please call at end): updateLastSeen();
+        phoneNumber = phone;
+        updateLastSeen(); // FR5
     }
 
     // ---- FR5: this method is mine ----
@@ -70,8 +79,15 @@ public:
     }
 
     void changePassword(string newPwd) {
-        // TODO: Implement password change
-        // FR5 HOOK (please call at end): updateLastSeen();
+        while (!validatePassword(newPwd)) {
+            cout << "Invalid Password. Try Again." << endl;
+            getline(cin, newPwd);
+        }
+
+        this->password = newPwd;
+        cout << "Password Changed Successfully!" << endl;
+        updateLastSeen(); // FR5
+        return;
     }
 };
 
@@ -101,8 +117,8 @@ public:
     }
 
     string getSender() const {
-        // TODO: Implement getter
-        return "";
+        // FR9 needs this to compare ownership. Minimal getter implementation.
+        return sender;
     }
 
     string getTimestamp() const {
@@ -116,8 +132,7 @@ public:
     }
 
     Message* getReplyTo() const {
-        // TODO: Implement getter
-        return nullptr;
+        return replyTo;
     }
 
     void setStatus(string newStatus) {
@@ -125,7 +140,8 @@ public:
     }
 
     void setReplyTo(Message* msg) {
-        // TODO: Implement setter
+        // FR9 uses this to clear dangling reply pointers when a message is deleted.
+        replyTo = msg;
     }
 
     void updateTimestamp() {
@@ -163,9 +179,28 @@ public:
         // TODO: Implement message addition
     }
 
+    // ---- FR9: users can delete their own messages ----
     bool deleteMessage(int index, const string& username) {
-        // TODO: Implement message deletion
-        return false;
+        // Bounds check (SRS §9: prevent out-of-range undefined behavior)
+        if (index < 0 || index >= (int)messages.size()) {
+            return false;
+        }
+        // Ownership check (SRS §4: only sender may delete their own message)
+        if (messages[index].getSender() != username) {
+            return false;
+        }
+
+        // Clear any dangling replyTo pointers referencing this message
+        // (SRS §4: "replyTo pointer must not be dereferenced after deletion")
+        Message* deletedPtr = &messages[index];
+        for (size_t i = 0; i < messages.size(); ++i) {
+            if (messages[i].getReplyTo() == deletedPtr) {
+                messages[i].setReplyTo(nullptr);
+            }
+        }
+
+        messages.erase(messages.begin() + index);
+        return true;
     }
 
     virtual void displayChat() const {
@@ -278,34 +313,63 @@ public:
 
     void signUp() {
         // TODO: Implement user registration
+        // use validateUsername() to check username uniqueness
+    }
+
+    bool validateUsername(string uname) {
+        // FR2: usernames must be unique
+        for (User user : users) {
+            if (user.getUsername() == uname) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    bool validatePhone(string phone) {
+        if (phone.length() != 11) {
+            cout << "Phone number must be 11 digits long." << endl;
+            return false;
+        } else if (phone[0] != '0' || phone[1] != '1') {
+            cout << "Phone number must start with '01'." << endl;
+            return false;
+        } else {
+            for (const auto& user : users) {
+                if (user.getPhoneNumber() == phone) {
+                    cout << "Phone number already exists. Please use a different phone number." << endl;
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     void login() {
         // TODO: Implement user login
-        // FR5 HOOK (please call after successful auth):
+        // FR5: after successful auth, add:
         //   users[currentUserIndex].updateLastSeen();
     }
 
     void startPrivateChat() {
         // TODO: Implement private chat creation
-        // FR5 HOOK (please call at end):
+        // FR5: at end (once currentUserIndex is valid), add:
         //   users[currentUserIndex].updateLastSeen();
     }
 
     void createGroup() {
         // TODO: Implement group creation
-        // FR5 HOOK (please call at end):
+        // FR5: at end, add:
         //   users[currentUserIndex].updateLastSeen();
     }
 
     void viewChats() const {
         // TODO: Implement chat viewing
-        // FR5 NOTE: method is `const`; to refresh lastSeen here, drop the `const`.
+        // FR5 NOTE: method is `const`; drop `const` if you want lastSeen refreshed here.
     }
 
     void logout() {
         // TODO: Implement logout
-        // FR5 HOOK (please call BEFORE resetting currentUserIndex to -1):
+        // FR5: BEFORE resetting currentUserIndex to -1, add:
         //   users[currentUserIndex].updateLastSeen();
     }
 
@@ -321,14 +385,22 @@ public:
                 else if (choice == 3) break;
             }
             else {
-                cout << "\n1. Start Private Chat\n2. Create Group\n3. View Chats\n4. Logout\nChoice: ";
+                cout << "\n1. Start Private Chat\n2. Create Group\n3. View Chats\n4. Change Password\n5. Logout\nChoice: ";
                 int choice;
                 cin >> choice;
 
                 if (choice == 1) startPrivateChat();
                 else if (choice == 2) createGroup();
                 else if (choice == 3) viewChats();
-                else if (choice == 4) logout();
+                else if (choice == 4) {
+                    string newPass;
+                    // TODO: Passwords must not be displayed when typing
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n'); // flush buffer
+                    cout << "Enter new password: " << endl;
+                    getline(cin, newPass);
+                    users[currentUserIndex].changePassword(newPass);
+                }
+                else if (choice == 5) logout();
             }
         }
     }
