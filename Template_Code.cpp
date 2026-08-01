@@ -28,10 +28,12 @@ private:
 public:
     User() {
         // TODO: Implement default constructor
+        // FR5 HOOK (please call at end): updateLastSeen();
     }
     
     User(string uname, string pwd, string phone) {
         // TODO: Implement parameterized constructor
+        // FR5 HOOK (please call at end): updateLastSeen();
     }
     
     string getUsername() const {
@@ -54,14 +56,20 @@ public:
     
     void setStatus(string newStatus) {
             status = newStatus;
+            updateLastSeen(); // FR5
     }
     
     void setPhoneNumber(string phone) {
     phoneNumber = phone;
+    updateLastSeen(); // FR5
    }
     
+    // ---- FR5: this method is mine ----
     void updateLastSeen() {
-        // TODO: Implement last seen update
+        time_t now = time(nullptr);
+        string t = ctime(&now);
+        if (!t.empty() && t.back() == '\n') t.pop_back();
+        lastSeen = t;
     }
     
     bool checkPassword(string pwd) const {
@@ -77,6 +85,7 @@ public:
 
         this->password = newPwd;
         cout << "Password Changed Successfully!" << endl;
+        updateLastSeen(); // FR5
         return;
     }
 };
@@ -320,22 +329,31 @@ public:
     
     void login() {
         // TODO: Implement user login
+        // FR5 HOOK (please call after successful auth):
+        //   users[currentUserIndex].updateLastSeen();
     }
     
     void startPrivateChat() {
         // TODO: Implement private chat creation
+        // FR5 HOOK (please call at end):
+        //   users[currentUserIndex].updateLastSeen();
     }
     
     void createGroup() {
         // TODO: Implement group creation
+        // FR5 HOOK (please call at end):
+        //   users[currentUserIndex].updateLastSeen();
     }
     
     void viewChats() const {
         // TODO: Implement chat viewing
+        // FR5 NOTE: method is `const`; drop `const` if you want lastSeen refreshed here.
     }
     
     void logout() {
         // TODO: Implement logout
+        // FR5 HOOK (please call BEFORE resetting currentUserIndex to -1):
+        //   users[currentUserIndex].updateLastSeen();
     }
     
     void run() {
