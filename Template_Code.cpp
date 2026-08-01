@@ -106,9 +106,9 @@ public:
         return "";
     }
     
+    // ---- FR9 needs this ----
     string getSender() const {
-        // TODO: Implement getter
-        return "";
+        return sender;
     }
     
     string getTimestamp() const {
@@ -121,17 +121,18 @@ public:
         return "";
     }
     
+    // ---- FR9 needs this ----
     Message* getReplyTo() const {
-        // TODO: Implement getter
-        return nullptr;
+        return replyTo;
     }
     
     void setStatus(string newStatus) {
         // TODO: Implement setter
     }
     
+    // ---- FR9 needs this ----
     void setReplyTo(Message* msg) {
-        // TODO: Implement setter
+        replyTo = msg;
     }
     
     void updateTimestamp() {
@@ -169,9 +170,27 @@ public:
         // TODO: Implement message addition
     }
     
+    // ---- FR9: users can delete their own messages ----
     bool deleteMessage(int index, const string& username) {
-        // TODO: Implement message deletion
-        return false;
+        // Bounds check (SRS §9)
+        if (index < 0 || index >= (int)messages.size()) {
+            return false;
+        }
+        // Ownership check (SRS §4)
+        if (messages[index].getSender() != username) {
+            return false;
+        }
+
+        // Clear dangling replyTo pointers before erasing (SRS §4)
+        Message* deletedPtr = &messages[index];
+        for (size_t i = 0; i < messages.size(); ++i) {
+            if (messages[i].getReplyTo() == deletedPtr) {
+                messages[i].setReplyTo(nullptr);
+            }
+        }
+
+        messages.erase(messages.begin() + index);
+        return true;
     }
     
     virtual void displayChat() const {
