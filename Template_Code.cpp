@@ -309,6 +309,10 @@ public:
         return false;
     }
     
+    string getDescription() const {
+        return description;
+    }
+
     void setDescription(string desc) {
         description = desc;
     }
@@ -325,7 +329,7 @@ public:
             cout << a << " ";
         }
         cout << endl;
-        cout << "Description: " << description << endl << "Chat: " << endl;
+        cout << "Description: " << (description.empty() ? "No description available" : description) << "\n";
 
         Chat::displayChat();
     } 
@@ -444,12 +448,11 @@ public:
     void viewChats() const {
         // TODO: Implement chat viewing
         // FR5 NOTE: method is `const`; drop `const` if you want lastSeen refreshed here.
+        // FR10: set messages as read when viewing a chat
         // FR23: Display all participants and admins when viewing a group
     }
     
     void logout() {
-        // TODO: Implement logout
-        // FR5 HOOK (please call BEFORE resetting currentUserIndex to -1):
         users[currentUserIndex].updateLastSeen();
         currentUserIndex = -1;
         loggedIn = false;
