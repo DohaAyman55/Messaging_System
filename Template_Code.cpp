@@ -55,14 +55,14 @@ public:
     }
     
     void setStatus(string newStatus) {
-            status = newStatus;
-            updateLastSeen(); // FR5
+        status = newStatus;
+        updateLastSeen(); // FR5
     }
     
     void setPhoneNumber(string phone) {
-    phoneNumber = phone;
-    updateLastSeen(); // FR5
-   }
+        phoneNumber = phone;
+        updateLastSeen(); // FR5
+    }
     
     void updateLastSeen() {
         time_t now = time(nullptr);
@@ -72,7 +72,9 @@ public:
     }
     
     bool checkPassword(string pwd) const {
-        // TODO: Implement password check
+        if (pwd == password) {
+            return true;
+        }
         return false;
     }
     
@@ -299,6 +301,7 @@ private:
     vector<User> users;
     vector<Chat*> chats;
     int currentUserIndex;
+    bool loggedIn = false;
     
     int findUserIndex(string username) const {
         // TODO: Implement user search
@@ -306,8 +309,7 @@ private:
     }
     
     bool isLoggedIn() const {
-        // TODO: Implement login check
-        return false;
+        return loggedIn;
     }
     
     string getCurrentUsername() const {
@@ -393,7 +395,9 @@ public:
     void logout() {
         // TODO: Implement logout
         // FR5 HOOK (please call BEFORE resetting currentUserIndex to -1):
-        //   users[currentUserIndex].updateLastSeen();
+        users[currentUserIndex].updateLastSeen();
+        currentUserIndex = -1;
+        isLoggedIn() = false;
     }
     
     void run() {
@@ -411,19 +415,32 @@ public:
                 cout << "\n1. Start Private Chat\n2. Create Group\n3. View Chats\n4. Change Password\n5. Logout\nChoice: ";
                 int choice;
                 cin >> choice;
-                
-                if (choice == 1) startPrivateChat();
-                else if (choice == 2) createGroup();
-                else if (choice == 3) viewChats();
-                else if (choice == 4) {
-                    string newPass;
-                    // TODO: Passwords must not be displayed when typing
-                    cin.ignore(numeric_limits<streamsize>::max(), '\n'); // flush buffer
-                    cout << "Enter new password: " << endl;
-                    getline(cin, newPass);
-                    users[currentUserIndex].changePassword(newPass);
+
+                switch (choice) {
+                    case 1:
+                        startPrivateChat();
+                        break;
+                    case 2:
+                        createGroup();
+                        break;
+                    case 3:
+                        viewChats();
+                        break;
+                    case 4: {
+                        string newPass;
+                        // TODO: Passwords must not be displayed when typing
+                        cin.ignore(numeric_limits<streamsize>::max(), '\n'); // flush buffer
+                        cout << "Enter new password: " << endl;
+                        getline(cin, newPass);
+                        users[currentUserIndex].changePassword(newPass);
+                        break;
+                    }
+                    case 5:
+                        logout();
+                        break;
+                    default:
+                        cout << "Invalid choice. Please try again." << endl;
                 }
-                else if (choice == 5) logout();
             }
         }
     }
