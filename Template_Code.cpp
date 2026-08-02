@@ -7,7 +7,6 @@ using namespace std;
 
 // HELPER FUNCTION
 bool validatePassword(string pwd) {
-    // TODO: Implement password validation (FR3)
    if (pwd.length() >= 6){
         return true;
     }else{
@@ -37,8 +36,7 @@ public:
     }
     
     string getUsername() const {
-        // TODO: Implement getter
-        return "";
+        return username;
     }
     
     string getPhoneNumber() const {
@@ -50,8 +48,7 @@ public:
     }
     
     string getLastSeen() const {
-        // TODO: Implement getter
-        return "";
+        return lastSeen;
     }
     
     void setStatus(string newStatus) {
@@ -106,7 +103,7 @@ public:
     Message() {
         sender = "";
         content = "";
-        status = "Sent";
+        status = "";
         replyTo = nullptr;
         updateTimestamp();
     }
@@ -134,8 +131,7 @@ public:
     }
     
     string getStatus() const {
-        // TODO: Implement getter
-        return "";
+        return status;
     }
     
     Message* getReplyTo() const {
@@ -152,6 +148,7 @@ public:
     
     void updateTimestamp() {
         // TODO: Implement timestamp update
+        // FR7
     }
     
     // ---- FR11: display shows reply reference (SRS TC5) ----
@@ -188,7 +185,9 @@ protected:
     
 public:
     Chat() {
-        // TODO: Implement default constructor
+        participants = {};
+        messages = {};
+        chatName = "";
     }
     
     Chat(vector<string> users, string name) {
@@ -198,7 +197,7 @@ public:
     
     void addMessage(const Message& msg) {
         messages.push_back(msg);
-    messages[messages.size() - 1].setStatus("Delivered");
+        messages[messages.size() - 1].setStatus("Delivered");
         // TODO: Implement message addition
     }
     
@@ -222,7 +221,7 @@ public:
     }
     
     virtual void displayChat() const {
-        cout << "Chat: " << chatName << endl;
+        cout << chatName << endl;
         for (const Message& msg : messages) {
             msg.display();
         }
@@ -253,12 +252,14 @@ private:
     string user2;
     
 public:
-    PrivateChat(string u1, string u2) {
-        // TODO: Implement constructor
+    PrivateChat(string u1, string u2) 
+        : Chat({u1, u2}, "Chat between " + u1 + " and " + u2) {
+       user1 = u1;
+       user2 = u2;
     }
     
     void displayChat() const override {
-        cout << "\n--- Private Chat: " << user1 << " & " << user2 << " ---\n";
+        cout << "\nPrivate Chat: ";
         Chat::displayChat();
     }
     
@@ -276,7 +277,8 @@ private:
     string description;
     
 public:
-    GroupChat(vector<string> users, string name, string creator) : Chat(users, name) { 
+    GroupChat(vector<string> users, string name, string description, string creator) 
+        : Chat(users, name) { 
         admins.push_back(creator); 
     }
     
@@ -312,10 +314,10 @@ public:
     }
     
     void displayChat() const override {
-        cout << "Group: " << chatName << endl;
+        cout << "\nGroup: " << chatName << endl;
         cout << "Participants: ";
         for (const auto& p : participants) {
-            cout << p << " ";
+            cout << p << endl;
         }
         cout << endl;
         cout << "Admins: ";
@@ -323,7 +325,8 @@ public:
             cout << a << " ";
         }
         cout << endl;
-        cout << "Description: " << description << endl;
+        cout << "Description: " << description << endl << "Chat: " << endl;
+
         Chat::displayChat();
     } 
 
@@ -416,6 +419,7 @@ public:
         // FR17: Groups require a name and at least 2 participants
         vector<string> participants;
         string groupName;
+        string description;
         
         // FR17
         // Get group name and participants from user input
@@ -430,7 +434,7 @@ public:
             cout << "Group must have at least 2 participants." << endl;
             return;
         }
-        GroupChat* newGroup = new GroupChat(participants, groupName, getCurrentUsername());
+        GroupChat* newGroup = new GroupChat(participants, groupName, description, getCurrentUsername());
         chats.push_back(newGroup);
 
         // FR5 HOOK (please call at end):
