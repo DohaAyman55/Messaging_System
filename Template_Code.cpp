@@ -252,7 +252,17 @@ private:
     
 public:
     GroupChat(vector<string> users, string name, string creator) : Chat(users, name) {
-        // TODO: Implement constructor
+     if (name.empty()) {
+        cout << "Group name cannot be empty." << endl;
+        return;
+    }
+    if (users.size() < 2) {
+        cout << "Group must have at least 2 participants." << endl;
+        return;
+    }
+    chatName = name;
+    participants = users;
+}
         // add data of parent class (Chat)
 
         // FR18: Creator becomes admin automatically
@@ -283,7 +293,20 @@ public:
     }
     
     void displayChat() const override {
-        // TODO: Implement group chat display
+void displayChat() const override {
+    cout << "Group: " << chatName << endl;
+
+    cout << "Participants: ";
+    for (const auto& p : participants) {
+        cout << p << " ";
+    }
+    cout << endl;
+
+    cout << "Admins: ";
+    for (const auto& a : admins) {
+        cout << a << " ";
+    }
+    cout << endl;
     }
     
     void sendJoinRequest(const string& username) {
