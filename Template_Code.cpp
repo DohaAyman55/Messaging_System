@@ -102,15 +102,29 @@ private:
     
 public:
     Message() {
+        sender = "";
+    content = "";
+    status = "Sent";
+    replyTo = nullptr;
+    updateTimestamp();
         // TODO: Implement default constructor
     }
     
-    Message(string sndr, string cntnt) {
+    Message(string sndr, string cntnt) { 
+        sender = "";
+    content = "";
+    status = "Sent";
+    replyTo = nullptr;
+    updateTimestamp();
         // TODO: Implement parameterized constructor
     }
     
     // ---- FR11 needs this for display(); also used by FR12 search ----
     string getContent() const {
+      messagesstatus
+        // TODO: Implement getter
+
+ main
         return content;
     }
     
@@ -133,6 +147,7 @@ public:
     }
     
     void setStatus(string newStatus) {
+        status = newStatus
         // TODO: Implement setter
     }
     
@@ -146,11 +161,24 @@ public:
     
     // ---- FR11: display shows reply reference (SRS TC5) ----
     void display() const {
+      messagesstatus
+        string icon = "✓";
+    if (status == "Delivered") {
+        icon = "✓✓";
+    }
+    else if (status == "Read") {
+        icon = "✓✓ (Read)";
+    }
+
+    cout << "[" << timestamp << "] " << sender << ": " << content << "  " << icon << endl;
+        // TODO: Implement message display
+
         if (replyTo != nullptr) {
             cout << "  \u21B3 Replying to " << replyTo->getSender()
                  << ": \"" << replyTo->getContent() << "\"" << endl;
         }
         cout << "[" << timestamp << "] " << sender << ": " << content << endl;
+ main
     }
     
     void addEmoji(string emojiCode) {
@@ -178,6 +206,8 @@ public:
     }
     
     void addMessage(const Message& msg) {
+        messages.push_back(msg);
+    messages[messages.size() - 1].setStatus("Delivered");
         // TODO: Implement message addition
     }
     
@@ -234,6 +264,9 @@ public:
     }
     
     void displayChat() const override {
+        cout << "\n--- Private Chat: " << user1 << " & " << user2 << " ---\n";
+    for (int i = 0; i < messages.size(); i++) {
+        messages[i].display();
         // TODO: Implement private chat display
     }
     
