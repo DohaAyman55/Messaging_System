@@ -64,7 +64,6 @@ public:
     updateLastSeen(); // FR5
    }
     
-    // ---- FR5: this method is mine ----
     void updateLastSeen() {
         time_t now = time(nullptr);
         string t = ctime(&now);
@@ -110,19 +109,18 @@ public:
         // TODO: Implement parameterized constructor
     }
     
+    // ---- FR11 needs this for display() ----
     string getContent() const {
-        // TODO: Implement getter
-        return "";
+        return content;
     }
     
-    // ---- FR9 needs this ----
     string getSender() const {
         return sender;
     }
     
+    // ---- FR11 needs this for display() ----
     string getTimestamp() const {
-        // TODO: Implement getter
-        return "";
+        return timestamp;
     }
     
     string getStatus() const {
@@ -130,7 +128,6 @@ public:
         return "";
     }
     
-    // ---- FR9 needs this ----
     Message* getReplyTo() const {
         return replyTo;
     }
@@ -139,7 +136,6 @@ public:
         // TODO: Implement setter
     }
     
-    // ---- FR9 needs this ----
     void setReplyTo(Message* msg) {
         replyTo = msg;
     }
@@ -148,8 +144,13 @@ public:
         // TODO: Implement timestamp update
     }
     
+    // ---- FR11: display shows reply reference (SRS TC5) ----
     void display() const {
-        // TODO: Implement message display
+        if (replyTo != nullptr) {
+            cout << "  \u21B3 Replying to " << replyTo->getSender()
+                 << ": \"" << replyTo->getContent() << "\"" << endl;
+        }
+        cout << "[" << timestamp << "] " << sender << ": " << content << endl;
     }
     
     void addEmoji(string emojiCode) {
@@ -179,18 +180,14 @@ public:
         // TODO: Implement message addition
     }
     
-    // ---- FR9: users can delete their own messages ----
     bool deleteMessage(int index, const string& username) {
-        // Bounds check (SRS §9)
         if (index < 0 || index >= (int)messages.size()) {
             return false;
         }
-        // Ownership check (SRS §4)
         if (messages[index].getSender() != username) {
             return false;
         }
 
-        // Clear dangling replyTo pointers before erasing (SRS §4)
         Message* deletedPtr = &messages[index];
         for (size_t i = 0; i < messages.size(); ++i) {
             if (messages[i].getReplyTo() == deletedPtr) {
