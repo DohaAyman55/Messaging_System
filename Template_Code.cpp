@@ -64,7 +64,6 @@ public:
     updateLastSeen(); // FR5
    }
     
-    // ---- FR5: this method is mine ----
     void updateLastSeen() {
         time_t now = time(nullptr);
         string t = ctime(&now);
@@ -110,12 +109,11 @@ public:
         // TODO: Implement parameterized constructor
     }
     
+    // ---- FR12 needs this ----
     string getContent() const {
-        // TODO: Implement getter
-        return "";
+        return content;
     }
     
-    // ---- FR9 needs this ----
     string getSender() const {
         return sender;
     }
@@ -130,7 +128,6 @@ public:
         return "";
     }
     
-    // ---- FR9 needs this ----
     Message* getReplyTo() const {
         return replyTo;
     }
@@ -139,7 +136,6 @@ public:
         // TODO: Implement setter
     }
     
-    // ---- FR9 needs this ----
     void setReplyTo(Message* msg) {
         replyTo = msg;
     }
@@ -179,18 +175,14 @@ public:
         // TODO: Implement message addition
     }
     
-    // ---- FR9: users can delete their own messages ----
     bool deleteMessage(int index, const string& username) {
-        // Bounds check (SRS §9)
         if (index < 0 || index >= (int)messages.size()) {
             return false;
         }
-        // Ownership check (SRS §4)
         if (messages[index].getSender() != username) {
             return false;
         }
 
-        // Clear dangling replyTo pointers before erasing (SRS §4)
         Message* deletedPtr = &messages[index];
         for (size_t i = 0; i < messages.size(); ++i) {
             if (messages[i].getReplyTo() == deletedPtr) {
@@ -206,9 +198,15 @@ public:
         // TODO: Implement chat display
     }
     
+    // ---- FR12: search messages by keyword ----
     vector<Message> searchMessages(string keyword) const {
-        // TODO: Implement message search
-        return {};
+        vector<Message> results;
+        for (const Message& m : messages) {
+            if (m.getContent().find(keyword) != string::npos) {
+                results.push_back(m);
+            }
+        }
+        return results;
     }
     
     void exportToFile(const string& filename) const {
