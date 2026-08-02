@@ -104,24 +104,21 @@ private:
 public:
     Message() {
         sender = "";
-    content = "";
-    status = "Sent";
-    replyTo = nullptr;
-    updateTimestamp();
-        // TODO: Implement default constructor
+        content = "";
+        status = "Sent";
+        replyTo = nullptr;
+        updateTimestamp();
     }
     
     Message(string sndr, string cntnt) { 
-        sender = "";
-    content = "";
-    status = "Sent";
-    replyTo = nullptr;
-    updateTimestamp();
-        // TODO: Implement parameterized constructor
+        sender = sndr;
+        content = cntnt;
+        status = "Sent";
+        replyTo = nullptr;
+        updateTimestamp();
     }
     
     string getContent() const {
-        // TODO: Implement getter
         return content;
     }
     
@@ -146,8 +143,7 @@ public:
     }
     
     void setStatus(string newStatus) {
-        status = newStatus
-        // TODO: Implement setter
+        status = newStatus;
     }
     
     // ---- FR9 needs this ----
@@ -161,15 +157,14 @@ public:
     
     void display() const {
         string icon = "✓";
-    if (status == "Delivered") {
-        icon = "✓✓";
-    }
-    else if (status == "Read") {
-        icon = "✓✓ (Read)";
-    }
+        if (status == "Delivered") {
+            icon = "✓✓";
+        }
+        else if (status == "Read") {
+            icon = "✓✓ (Read)";
+        }
 
-    cout << "[" << timestamp << "] " << sender << ": " << content << "  " << icon << endl;
-        // TODO: Implement message display
+        cout << "[" << getTimestamp() << "] " << getSender() << ": " << getContent() << "  " << icon << endl;
     }
     
     void addEmoji(string emojiCode) {
@@ -253,9 +248,10 @@ public:
     
     void displayChat() const override {
         cout << "\n--- Private Chat: " << user1 << " & " << user2 << " ---\n";
-    for (int i = 0; i < messages.size(); i++) {
-        messages[i].display();
-        // TODO: Implement private chat display
+        for (int i = 0; i < messages.size(); i++) {
+            messages[i].display();
+            // TODO: Implement private chat display
+        }
     }
     
     void showTypingIndicator(const string& username) const {
