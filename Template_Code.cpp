@@ -277,9 +277,17 @@ private:
     
 public:
     GroupChat(vector<string> users, string name, string creator) : Chat(users, name) {
-        // TODO: Implement constructor
-        // add data of parent class (Chat)
-
+    if (name.empty()) {
+        cout << "Group name cannot be empty." << endl;
+        return;
+    }
+    if (users.size() < 2) {
+        cout << "Group must have at least 2 participants." << endl;
+        return;
+    }
+        chatName = name;
+        participants = users;
+        admins.push_back(creator);
         // FR18: Creator becomes admin automatically
         admins.push_back(creator); 
     }
