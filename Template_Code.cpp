@@ -109,7 +109,7 @@ public:
         // TODO: Implement parameterized constructor
     }
     
-    // ---- FR11 needs this for display() ----
+    // ---- FR11 needs this for display(); also used by FR12 search ----
     string getContent() const {
         return content;
     }
@@ -203,9 +203,15 @@ public:
         // TODO: Implement chat display
     }
     
+    // ---- FR12: search messages by keyword ----
     vector<Message> searchMessages(string keyword) const {
-        // TODO: Implement message search
-        return {};
+        vector<Message> results;
+        for (const Message& m : messages) {
+            if (m.getContent().find(keyword) != string::npos) {
+                results.push_back(m);
+            }
+        }
+        return results;
     }
     
     void exportToFile(const string& filename) const {
