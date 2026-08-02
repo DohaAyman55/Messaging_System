@@ -316,9 +316,18 @@ public:
     }
     
     void displayChat() const override {
-        // TODO: Implement group chat display
+        cout << "Group: " << chatName << endl;
+        cout << "Participants: ";
+    for (const auto& p : participants) {
+        cout << p << " ";
     }
-    
+        cout << endl;
+        cout << "Admins: ";
+    for (const auto& a : admins) {
+        cout << a << " ";
+    }
+    cout << endl;
+    } 
     void sendJoinRequest(const string& username) {
         // TODO: Implement join request
     }
