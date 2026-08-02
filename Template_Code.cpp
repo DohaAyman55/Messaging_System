@@ -64,7 +64,6 @@ public:
     updateLastSeen(); // FR5
    }
     
-    // ---- FR5: this method is mine ----
     void updateLastSeen() {
         time_t now = time(nullptr);
         string t = ctime(&now);
@@ -120,19 +119,22 @@ public:
         // TODO: Implement parameterized constructor
     }
     
+    // ---- FR11 needs this for display(); also used by FR12 search ----
     string getContent() const {
+      messagesstatus
         // TODO: Implement getter
+
+ main
         return content;
     }
     
-    // ---- FR9 needs this ----
     string getSender() const {
         return sender;
     }
     
+    // ---- FR11 needs this for display() ----
     string getTimestamp() const {
-        // TODO: Implement getter
-        return "";
+        return timestamp;
     }
     
     string getStatus() const {
@@ -140,7 +142,6 @@ public:
         return "";
     }
     
-    // ---- FR9 needs this ----
     Message* getReplyTo() const {
         return replyTo;
     }
@@ -150,7 +151,6 @@ public:
         // TODO: Implement setter
     }
     
-    // ---- FR9 needs this ----
     void setReplyTo(Message* msg) {
         replyTo = msg;
     }
@@ -159,7 +159,9 @@ public:
         // TODO: Implement timestamp update
     }
     
+    // ---- FR11: display shows reply reference (SRS TC5) ----
     void display() const {
+      messagesstatus
         string icon = "✓";
     if (status == "Delivered") {
         icon = "✓✓";
@@ -170,6 +172,13 @@ public:
 
     cout << "[" << timestamp << "] " << sender << ": " << content << "  " << icon << endl;
         // TODO: Implement message display
+
+        if (replyTo != nullptr) {
+            cout << "  \u21B3 Replying to " << replyTo->getSender()
+                 << ": \"" << replyTo->getContent() << "\"" << endl;
+        }
+        cout << "[" << timestamp << "] " << sender << ": " << content << endl;
+ main
     }
     
     void addEmoji(string emojiCode) {
@@ -192,7 +201,8 @@ public:
     }
     
     Chat(vector<string> users, string name) {
-        // TODO: Implement parameterized constructor
+        participants = users;
+        chatName = name;
     }
     
     void addMessage(const Message& msg) {
@@ -201,18 +211,14 @@ public:
         // TODO: Implement message addition
     }
     
-    // ---- FR9: users can delete their own messages ----
     bool deleteMessage(int index, const string& username) {
-        // Bounds check (SRS §9)
         if (index < 0 || index >= (int)messages.size()) {
             return false;
         }
-        // Ownership check (SRS §4)
         if (messages[index].getSender() != username) {
             return false;
         }
 
-        // Clear dangling replyTo pointers before erasing (SRS §4)
         Message* deletedPtr = &messages[index];
         for (size_t i = 0; i < messages.size(); ++i) {
             if (messages[i].getReplyTo() == deletedPtr) {
@@ -228,9 +234,15 @@ public:
         // TODO: Implement chat display
     }
     
+    // ---- FR12: search messages by keyword ----
     vector<Message> searchMessages(string keyword) const {
-        // TODO: Implement message search
-        return {};
+        vector<Message> results;
+        for (const Message& m : messages) {
+            if (m.getContent().find(keyword) != string::npos) {
+                results.push_back(m);
+            }
+        }
+        return results;
     }
     
     void exportToFile(const string& filename) const {
@@ -272,8 +284,12 @@ private:
     string description;
     
 public:
-    GroupChat(vector<string> users, string name, string creator) {
+    GroupChat(vector<string> users, string name, string creator) : Chat(users, name) {
         // TODO: Implement constructor
+        // add data of parent class (Chat)
+
+        // FR18: Creator becomes admin automatically
+        admins.push_back(creator); 
     }
     
     void addAdmin(string newAdmin) {
@@ -328,7 +344,9 @@ private:
     }
     
     string getCurrentUsername() const {
-        // TODO: Implement get current user
+        if (isLoggedIn()) {
+            return users[currentUserIndex].getUsername();
+        }
         return "";
     }
     
@@ -375,6 +393,8 @@ public:
         // TODO: Implement user login
         // FR5 HOOK (please call after successful auth):
         //   users[currentUserIndex].updateLastSeen();
+        // set isLogged in to true and currentUserIndex to the index of 
+        // the logged-in user using findUserIndex()
     }
     
     void startPrivateChat() {
@@ -385,13 +405,22 @@ public:
     
     void createGroup() {
         // TODO: Implement group creation
+        // FR17: Groups require a name and at least 2 participants
+        vector<string> participants;
+        string groupName;
+
+        // FR18: Creator becomes admin automatically
+        GroupChat* newGroup = new GroupChat(participants, groupName, getCurrentUsername());
+        chats.push_back(newGroup);
+
         // FR5 HOOK (please call at end):
-        //   users[currentUserIndex].updateLastSeen();
+        users[currentUserIndex].updateLastSeen();
     }
     
     void viewChats() const {
         // TODO: Implement chat viewing
         // FR5 NOTE: method is `const`; drop `const` if you want lastSeen refreshed here.
+        // FR23: Display all participants and admins when viewing a group
     }
     
     void logout() {
@@ -432,12 +461,6 @@ public:
         }
     }
 };
-
-// HELPER FUNCTION
-bool validatePassword(string pwd) {
-    // TODO: Implement password validation (FR3)
-    return true;
-}
 
 // ========================
 //          MAIN
