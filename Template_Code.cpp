@@ -104,11 +104,19 @@ private:
     
 public:
     Message() {
-        // TODO: Implement default constructor
+        sender = "";
+        content = "";
+        status = "Sent";
+        replyTo = nullptr;
+        updateTimestamp();
     }
     
-    Message(string sndr, string cntnt) {
-        // TODO: Implement parameterized constructor
+    Message(string sndr, string cntnt) { 
+        sender = sndr;
+        content = cntnt;
+        status = "Sent";
+        replyTo = nullptr;
+        updateTimestamp();
     }
     
     // ---- FR11 needs this for display(); also used by FR12 search ----
@@ -135,7 +143,7 @@ public:
     }
     
     void setStatus(string newStatus) {
-        // TODO: Implement setter
+        status = newStatus;
     }
     
     void setReplyTo(Message* msg) {
@@ -150,9 +158,18 @@ public:
     void display() const {
         if (replyTo != nullptr) {
             cout << "  \u21B3 Replying to " << replyTo->getSender()
-                 << ": \"" << replyTo->getContent() << "\"" << endl;
+                << ": \"" << replyTo->getContent() << "\"" << endl;
         }
-        cout << "[" << timestamp << "] " << sender << ": " << content << endl;
+
+        string icon = "✓";
+        if (status == "Delivered") {
+            icon = "✓✓";
+        }
+        else if (status == "Read") {
+            icon = "✓✓ (Read)";
+        }
+
+        cout << "[" << timestamp << "] " << sender << ": " << content << " " << icon << endl;
     }
     
     void addEmoji(string emojiCode) {
@@ -180,6 +197,8 @@ public:
     }
     
     void addMessage(const Message& msg) {
+        messages.push_back(msg);
+    messages[messages.size() - 1].setStatus("Delivered");
         // TODO: Implement message addition
     }
     
@@ -236,7 +255,11 @@ public:
     }
     
     void displayChat() const override {
-        // TODO: Implement private chat display
+        cout << "\n--- Private Chat: " << user1 << " & " << user2 << " ---\n";
+        for (int i = 0; i < messages.size(); i++) {
+            messages[i].display();
+            // TODO: Implement private chat display
+        }
     }
     
     void showTypingIndicator(const string& username) const {
@@ -397,7 +420,7 @@ public:
         // FR5 HOOK (please call BEFORE resetting currentUserIndex to -1):
         users[currentUserIndex].updateLastSeen();
         currentUserIndex = -1;
-        isLoggedIn() = false;
+        loggedIn = false;
     }
     
     void run() {
