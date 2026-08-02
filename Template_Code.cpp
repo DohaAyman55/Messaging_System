@@ -173,7 +173,8 @@ public:
     }
     
     Chat(vector<string> users, string name) {
-        // TODO: Implement parameterized constructor
+        participants = users;
+        chatName = name;
     }
     
     void addMessage(const Message& msg) {
@@ -250,8 +251,12 @@ private:
     string description;
     
 public:
-    GroupChat(vector<string> users, string name, string creator) {
+    GroupChat(vector<string> users, string name, string creator) : Chat(users, name) {
         // TODO: Implement constructor
+        // add data of parent class (Chat)
+
+        // FR18: Creator becomes admin automatically
+        admins.push_back(creator); 
     }
     
     void addAdmin(string newAdmin) {
@@ -306,7 +311,9 @@ private:
     }
     
     string getCurrentUsername() const {
-        // TODO: Implement get current user
+        if (isLoggedIn()) {
+            return users[currentUserIndex].getUsername();
+        }
         return "";
     }
     
@@ -353,6 +360,8 @@ public:
         // TODO: Implement user login
         // FR5 HOOK (please call after successful auth):
         //   users[currentUserIndex].updateLastSeen();
+        // set isLogged in to true and currentUserIndex to the index of 
+        // the logged-in user using findUserIndex()
     }
     
     void startPrivateChat() {
@@ -363,13 +372,22 @@ public:
     
     void createGroup() {
         // TODO: Implement group creation
+        // FR17: Groups require a name and at least 2 participants
+        vector<string> participants;
+        string groupName;
+
+        // FR18: Creator becomes admin automatically
+        GroupChat* newGroup = new GroupChat(participants, groupName, getCurrentUsername());
+        chats.push_back(newGroup);
+
         // FR5 HOOK (please call at end):
-        //   users[currentUserIndex].updateLastSeen();
+        users[currentUserIndex].updateLastSeen();
     }
     
     void viewChats() const {
         // TODO: Implement chat viewing
         // FR5 NOTE: method is `const`; drop `const` if you want lastSeen refreshed here.
+        // FR23: Display all participants and admins when viewing a group
     }
     
     void logout() {
@@ -410,12 +428,6 @@ public:
         }
     }
 };
-
-// HELPER FUNCTION
-bool validatePassword(string pwd) {
-    // TODO: Implement password validation (FR3)
-    return true;
-}
 
 // ========================
 //          MAIN
