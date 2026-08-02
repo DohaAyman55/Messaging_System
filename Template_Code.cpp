@@ -222,7 +222,10 @@ public:
     }
     
     virtual void displayChat() const {
-        // TODO: Implement chat display
+        cout << "Chat: " << chatName << endl;
+        for (const Message& msg : messages) {
+            msg.display();
+        }
     }
     
     // ---- FR12: search messages by keyword ----
@@ -256,10 +259,7 @@ public:
     
     void displayChat() const override {
         cout << "\n--- Private Chat: " << user1 << " & " << user2 << " ---\n";
-        for (int i = 0; i < messages.size(); i++) {
-            messages[i].display();
-            // TODO: Implement private chat display
-        }
+        Chat::displayChat();
     }
     
     void showTypingIndicator(const string& username) const {
@@ -276,19 +276,7 @@ private:
     string description;
     
 public:
-    GroupChat(vector<string> users, string name, string creator) : Chat(users, name) {
-    if (name.empty()) {
-        cout << "Group name cannot be empty." << endl;
-        return;
-    }
-    if (users.size() < 2) {
-        cout << "Group must have at least 2 participants." << endl;
-        return;
-    }
-        chatName = name;
-        participants = users;
-        admins.push_back(creator);
-        // FR18: Creator becomes admin automatically
+    GroupChat(vector<string> users, string name, string creator) : Chat(users, name) { 
         admins.push_back(creator); 
     }
     
@@ -302,32 +290,43 @@ public:
     }
     
     bool isAdmin(string username) const {
-        // TODO: Implement admin check
+        for (const auto& a : admins) {
+            if (a == username) {
+                return true;
+            }
+        }
         return false;
     }
     
     bool isParticipant(string username) const {
-        // TODO: Implement participant check
+        for (const auto& p : participants) {
+            if (p == username) {
+                return true;
+            }
+        }
         return false;
     }
     
     void setDescription(string desc) {
-        // TODO: Implement set description
+        description = desc;
     }
     
     void displayChat() const override {
         cout << "Group: " << chatName << endl;
         cout << "Participants: ";
-    for (const auto& p : participants) {
-        cout << p << " ";
-    }
+        for (const auto& p : participants) {
+            cout << p << " ";
+        }
         cout << endl;
         cout << "Admins: ";
-    for (const auto& a : admins) {
-        cout << a << " ";
-    }
-    cout << endl;
+        for (const auto& a : admins) {
+            cout << a << " ";
+        }
+        cout << endl;
+        cout << "Description: " << description << endl;
+        Chat::displayChat();
     } 
+
     void sendJoinRequest(const string& username) {
         // TODO: Implement join request
     }
@@ -417,8 +416,20 @@ public:
         // FR17: Groups require a name and at least 2 participants
         vector<string> participants;
         string groupName;
+        
+        // FR17
+        // Get group name and participants from user input
+        // ensure that input usernames exist 
 
-        // FR18: Creator becomes admin automatically
+        // check for empty group name and at least 2 participants
+        if (groupName.empty()) {
+            cout << "Group name cannot be empty." << endl;
+            return;
+        }
+        if (participants.size() < 2) {
+            cout << "Group must have at least 2 participants." << endl;
+            return;
+        }
         GroupChat* newGroup = new GroupChat(participants, groupName, getCurrentUsername());
         chats.push_back(newGroup);
 
