@@ -109,7 +109,7 @@ public:
         // TODO: Implement parameterized constructor
     }
     
-    // ---- FR12 needs this ----
+    // ---- FR11 needs this for display(); also used by FR12 search ----
     string getContent() const {
         return content;
     }
@@ -118,9 +118,9 @@ public:
         return sender;
     }
     
+    // ---- FR11 needs this for display() ----
     string getTimestamp() const {
-        // TODO: Implement getter
-        return "";
+        return timestamp;
     }
     
     string getStatus() const {
@@ -144,8 +144,13 @@ public:
         // TODO: Implement timestamp update
     }
     
+    // ---- FR11: display shows reply reference (SRS TC5) ----
     void display() const {
-        // TODO: Implement message display
+        if (replyTo != nullptr) {
+            cout << "  \u21B3 Replying to " << replyTo->getSender()
+                 << ": \"" << replyTo->getContent() << "\"" << endl;
+        }
+        cout << "[" << timestamp << "] " << sender << ": " << content << endl;
     }
     
     void addEmoji(string emojiCode) {
