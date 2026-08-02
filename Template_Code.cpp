@@ -312,10 +312,22 @@ public:
     }
     
     void setDescription(string desc) {
+        description = desc;
+
+        string getdescription() const{
+            return description;
+        }
+
         // TODO: Implement set description
     }
     
     void displayChat() const override {
+        cout << "\n--- Group chat: " << name << "---\n"
+        cout << "Description: " << (description.empty() ? "No description available" : description) << "\n";
+
+        for (size_t i = 0; i < messages.size(); i++){
+            messages[i].display();
+        }
         // TODO: Implement group chat display
     }
     
