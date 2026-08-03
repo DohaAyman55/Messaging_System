@@ -4,6 +4,7 @@
 #include <string>
 #include <ctime>
 #include <limits>
+#include <algorithm> 
 using namespace std;
 
 // HELPER FUNCTION
@@ -140,6 +141,10 @@ public:
     void setStatus(string newStatus) {
         status = newStatus;
     }
+
+    void markAsRead() {
+        status = "Read";
+    }
     
     void setReplyTo(Message* msg) {
         replyTo = msg;
@@ -196,6 +201,21 @@ public:
     // ---- SCRUM-34: virtual so `delete chatPtr` runs the right destructor
     //      for PrivateChat / GroupChat (prevents UB and leaks) ----
     virtual ~Chat() {}
+
+    bool isMember(const string& username) const {
+        for (const auto& p : participants) {
+            if (p == username) return true;
+        }
+        return false;
+    }
+
+    void markAllAsRead(const string& viewer) {
+        for (Message& msg : messages) {
+            if (msg.getSender() != viewer) {
+                msg.markAsRead();
+            }
+        }
+    }
     
     void addMessage(const Message& msg) {
         messages.push_back(msg);
@@ -320,12 +340,7 @@ public:
     }
     
     bool isParticipant(string username) const {
-        for (const auto& p : participants) {
-            if (p == username) {
-                return true;
-            }
-        }
-        return false;
+        return isMember(username);
     }
     
     string getDescription() const {
@@ -456,6 +471,9 @@ public:
         // Get group name and participants from user input
         // ensure that input usernames exist 
 
+        if (find(participants.begin(), participants.end(), getCurrentUsername()) == participants.end()) {
+            participants.push_back(getCurrentUsername());
+        }
         // check for empty group name and at least 2 participants
         if (groupName.empty()) {
             cout << "Group name cannot be empty." << endl;
@@ -465,6 +483,7 @@ public:
             cout << "Group must have at least 2 participants." << endl;
             return;
         }
+
         GroupChat* newGroup = new GroupChat(participants, groupName, description, getCurrentUsername());
         chats.push_back(newGroup);
 
@@ -477,6 +496,14 @@ public:
         // FR5 NOTE: method is `const`; drop `const` if you want lastSeen refreshed here.
         // FR10: set messages as read when viewing a chat
         // FR23: Display all participants and admins when viewing a group
+
+        string current = getCurrentUsername();
+        for (Chat* chat : chats) {
+            if (chat && chat->isMember(current)) {
+                chat->markAllAsRead(current);
+                chat->displayChat();
+            }
+        }
     }
     
     void logout() {
