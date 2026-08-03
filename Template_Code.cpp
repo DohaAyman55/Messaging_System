@@ -119,6 +119,10 @@ public:
     }
     
     string getContent() const {
+      messagesstatus
+        // TODO: Implement getter
+
+ main
         return content;
     }
     
@@ -139,6 +143,8 @@ public:
     }
     
     void setStatus(string newStatus) {
+        status = newStatus
+        // TODO: Implement setter
         status = newStatus;
     }
 
@@ -156,6 +162,18 @@ public:
     }
     
     void display() const {
+      messagesstatus
+        string icon = "✓";
+    if (status == "Delivered") {
+        icon = "✓✓";
+    }
+    else if (status == "Read") {
+        icon = "✓✓ (Read)";
+    }
+
+    cout << "[" << timestamp << "] " << sender << ": " << content << "  " << icon << endl;
+        // TODO: Implement message display
+
         if (replyTo != nullptr) {
             cout << "  \u21B3 Replying to " << replyTo->getSender()
                 << ": \"" << replyTo->getContent() << "\"" << endl;
@@ -170,6 +188,7 @@ public:
         }
 
         cout << "[" << timestamp << "] " << sender << ": " << content << " " << icon << endl;
+
     }
     
     void addEmoji(string emojiCode) {
@@ -219,7 +238,8 @@ public:
     
     void addMessage(const Message& msg) {
         messages.push_back(msg);
-        messages[messages.size() - 1].setStatus("Delivered");
+    messages[messages.size() - 1].setStatus("Delivered");
+        // TODO: Implement message addition
     }
     
     bool deleteMessage(int index, const string& username) {
@@ -302,8 +322,10 @@ public:
     }
     
     void displayChat() const override {
-        cout << "\nPrivate Chat: ";
-        Chat::displayChat();
+        cout << "\n--- Private Chat: " << user1 << " & " << user2 << " ---\n";
+    for (int i = 0; i < messages.size(); i++) {
+        messages[i].display();
+        // TODO: Implement private chat display
     }
     
     void showTypingIndicator(const string& username) const {
@@ -457,6 +479,29 @@ public:
         //   users[currentUserIndex].updateLastSeen();
         // set isLogged in to true and currentUserIndex to the index of 
         // the logged-in user using findUserIndex()
+        string uname, pwd;
+        cout << "\n=== User Login ===\n";
+        cout << "Enter Username: ";
+        cin >> uname;
+        
+        int index = findUserIndex(uname);
+        
+        if (index == -1) {
+            cout << "[Error] User not found!\n";
+            return;
+        }
+        
+        cout << "Enter Password: ";
+        cin >> pwd;
+        
+        if (users[index].checkPassword(pwd)) {
+            currentUserIndex = index;
+            users[currentUserIndex].setStatus("Online");
+            users[currentUserIndex].updateLastSeen();
+            cout << "\n[Success] Logged in successfully! Welcome, " << getCurrentUsername() << "!\n";
+        } else {
+            cout << "[Error] Incorrect password!\n";
+        }
     }
     
     void startPrivateChat() {
