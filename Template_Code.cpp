@@ -236,8 +236,21 @@ public:
         admins.push_back(creator);
     }
 
-    void addAdmin(string newAdmin) {
-        // TODO: Implement add admin
+    void addAdmin(const string& admin, string newAdmin) {
+        if (!isAdmin(admin)) {
+            cout << "Only admins can promote participants to admin." << endl;
+            return;
+        }
+        else{
+            if (isParticipant(newAdmin) && !isAdmin(newAdmin)) {
+                admins.push_back(newAdmin);
+                cout << newAdmin << " has been promoted to admin." << endl;
+            } else if (!isParticipant(newAdmin)) {
+                cout << "User is not a participant in the group." << endl;
+            } else {
+                cout << "User is already an admin." << endl;
+            }
+        }
     }
 
     bool removeParticipant(const string& admin, const string& userToRemove) {
