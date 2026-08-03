@@ -297,7 +297,8 @@ private:
 public:
     GroupChat(vector<string> users, string name, string description, string creator) 
         : Chat(users, name) { 
-        admins.push_back(creator); 
+            this->description = description;
+            admins.push_back(creator); 
     }
     
     void addAdmin(string newAdmin) {
@@ -408,25 +409,25 @@ public:
         return true;
     }
     
-    bool validatePhone(string phone) {
+    bool validatePhone(string phone, int excludeUserIndex = -1) {
   
         if (phone.length() != 11) {
             cout << "Phone number must be 11 digits long." << endl;
             return false;
         }
-        else if (phone[0] != '0' || phone[1] != '1') {
+        if (phone[0] != '0' || phone[1] != '1') {
             cout << "Phone number must start with '01'." << endl;
             return false;
         }
-        else {
-            for (const auto& user : users) {
-                if (user.getPhoneNumber() == phone) {
-                    cout << "Phone number already exists. Please use a different phone number." << endl;
-                    return false;
-                }
+         
+        for (size_t i = 0; i < users.size(); ++i) {
+            if ((int)i == excludeUserIndex) continue;
+            if (users[i].getPhoneNumber() == phone) {
+                cout << "Phone number already exists. Please use a different phone number." << endl;
+                return false;
             }
         }
-
+                
         return true;
     }
     
@@ -496,9 +497,10 @@ public:
                 else if (choice == 3) break;
             }
             else {
-                cout << "\n1. Start Private Chat\n2. Create Group\n3. View Chats\n4. Change Password\n5. Logout\nChoice: ";
+                cout << "\n1. Start Private Chat\n2. Create Group\n3. View Chats\n4. Edit Account\n5. Logout\nChoice: ";
                 int choice;
                 cin >> choice;
+                cin.ignore(numeric_limits<streamsize>::max(), '\n'); // flush buffer
 
                 switch (choice) {
                     case 1:
@@ -511,12 +513,54 @@ public:
                         viewChats();
                         break;
                     case 4: {
-                        string newPass;
-                        // TODO: Passwords must not be displayed when typing
-                        cin.ignore(numeric_limits<streamsize>::max(), '\n'); // flush buffer
-                        cout << "Enter new password: " << endl;
-                        getline(cin, newPass);
-                        users[currentUserIndex].changePassword(newPass);
+                        bool editing = true;
+                        while (editing) {
+                            cout << "\n--- Edit Account ---\n";
+                            cout << "1. Change Status\n";
+                            cout << "2. Change Phone Number\n";
+                            cout << "3. Change Password\n";
+                            cout << "4. Back to Main Menu\n";
+                            cout << "Choice: ";
+
+                            int editChoice;
+                            cin >> editChoice;
+                            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+                            switch (editChoice) {
+                                case 1: {
+                                    string newStatus;
+                                    cout << "Enter new status: ";
+                                    getline(cin, newStatus);
+                                    users[currentUserIndex].setStatus(newStatus);
+                                    cout << "Status updated successfully.\n";
+                                    break;
+                                }
+                                case 2: {
+                                    string newPhone;
+                                    do{
+                                        cout << "Enter new phone number: ";
+                                        getline(cin, newPhone);
+                                    } while (!validatePhone(newPhone, currentUserIndex));
+
+                                    users[currentUserIndex].setPhoneNumber(newPhone);
+                                    cout << "Phone number updated successfully.\n";
+                                    break;
+                                }
+                                case 3: {
+                                    // TODO: Passwords must not be displayed when typing
+                                    string newPass;
+                                    cout << "Enter new password: ";
+                                    getline(cin, newPass);
+                                    users[currentUserIndex].changePassword(newPass);
+                                    break;
+                                }
+                                case 4:
+                                    editing = false;
+                                    break;
+                                default:
+                                    cout << "Invalid choice. Please try again.\n";
+                            }
+                        }
                         break;
                     }
                     case 5:
