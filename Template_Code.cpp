@@ -248,6 +248,11 @@ public:
         }
     }
     
+    // Accessor used by the export-chat menu option
+    string getChatName() const {
+        return chatName;
+    }
+    
     vector<Message> searchMessages(string keyword) const {
         vector<Message> results;
         for (const Message& m : messages) {
@@ -506,6 +511,31 @@ public:
         }
     }
     
+    // ---- SCRUM-32 (menu wiring): let user pick a chat and export it ----
+    void exportChat() {
+        if (chats.empty()) {
+            cout << "No chats to export." << endl;
+            return;
+        }
+        cout << "\nSelect a chat to export:\n";
+        for (size_t i = 0; i < chats.size(); ++i) {
+            cout << (i + 1) << ". " << chats[i]->getChatName() << "\n";
+        }
+        cout << "Choice: ";
+        int idx;
+        cin >> idx;
+        if (idx < 1 || idx > (int)chats.size()) {
+            cout << "Invalid choice." << endl;
+            return;
+        }
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << "Filename: ";
+        string filename;
+        getline(cin, filename);
+        chats[idx - 1]->exportToFile(filename);
+        users[currentUserIndex].updateLastSeen(); // FR5
+    }
+    
     void logout() {
         users[currentUserIndex].updateLastSeen();
         currentUserIndex = -1;
@@ -524,7 +554,7 @@ public:
                 else if (choice == 3) break;
             }
             else {
-                cout << "\n1. Start Private Chat\n2. Create Group\n3. View Chats\n4. Edit Account\n5. Logout\nChoice: ";
+                cout << "\n1. Start Private Chat\n2. Create Group\n3. View Chats\n4. Edit Account\n5. Change Password\n6. Export Chat\n7. Logout\nChoice: ";
                 int choice;
                 cin >> choice;
                 cin.ignore(numeric_limits<streamsize>::max(), '\n'); // flush buffer
@@ -591,6 +621,9 @@ public:
                         break;
                     }
                     case 5:
+                        exportChat();
+                        break;
+                    case 6:
                         logout();
                         break;
                     default:
