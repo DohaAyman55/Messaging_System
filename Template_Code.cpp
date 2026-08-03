@@ -4,6 +4,7 @@
 #include <string>
 #include <ctime>
 #include <limits>
+#include <algorithm> 
 using namespace std;
 
 // HELPER FUNCTION
@@ -140,6 +141,10 @@ public:
     void setStatus(string newStatus) {
         status = newStatus;
     }
+
+    void markAsRead() {
+        status = "Read";
+    }
     
     void setReplyTo(Message* msg) {
         replyTo = msg;
@@ -191,6 +196,25 @@ public:
     Chat(vector<string> users, string name) {
         participants = users;
         chatName = name;
+    }
+    
+    // ---- SCRUM-34: virtual so `delete chatPtr` runs the right destructor
+    //      for PrivateChat / GroupChat (prevents UB and leaks) ----
+    virtual ~Chat() {}
+
+    bool isMember(const string& username) const {
+        for (const auto& p : participants) {
+            if (p == username) return true;
+        }
+        return false;
+    }
+
+    void markAllAsRead(const string& viewer) {
+        for (Message& msg : messages) {
+            if (msg.getSender() != viewer) {
+                msg.markAsRead();
+            }
+        }
     }
     
     void addMessage(const Message& msg) {
@@ -298,7 +322,8 @@ private:
 public:
     GroupChat(vector<string> users, string name, string description, string creator) 
         : Chat(users, name) { 
-        admins.push_back(creator); 
+            this->description = description;
+            admins.push_back(creator); 
     }
     
     void addAdmin(string newAdmin) {
@@ -320,12 +345,7 @@ public:
     }
     
     bool isParticipant(string username) const {
-        for (const auto& p : participants) {
-            if (p == username) {
-                return true;
-            }
-        }
-        return false;
+        return isMember(username);
     }
     
     string getDescription() const {
@@ -387,6 +407,14 @@ private:
 public:
     WhatsApp() : currentUserIndex(-1) {}
     
+    // ---- SCRUM-34: release all Chat* allocations (SRS §7.5, §10.5) ----
+    ~WhatsApp() {
+        for (Chat* c : chats) {
+            delete c;
+        }
+        chats.clear();
+    }
+    
     void signUp() {
         // TODO: Implement user registration
         // use validateUsername() to check username uniqueness
@@ -401,25 +429,25 @@ public:
         return true;
     }
     
-    bool validatePhone(string phone) {
+    bool validatePhone(string phone, int excludeUserIndex = -1) {
   
         if (phone.length() != 11) {
             cout << "Phone number must be 11 digits long." << endl;
             return false;
         }
-        else if (phone[0] != '0' || phone[1] != '1') {
+        if (phone[0] != '0' || phone[1] != '1') {
             cout << "Phone number must start with '01'." << endl;
             return false;
         }
-        else {
-            for (const auto& user : users) {
-                if (user.getPhoneNumber() == phone) {
-                    cout << "Phone number already exists. Please use a different phone number." << endl;
-                    return false;
-                }
+         
+        for (size_t i = 0; i < users.size(); ++i) {
+            if ((int)i == excludeUserIndex) continue;
+            if (users[i].getPhoneNumber() == phone) {
+                cout << "Phone number already exists. Please use a different phone number." << endl;
+                return false;
             }
         }
-
+                
         return true;
     }
     
@@ -448,6 +476,9 @@ public:
         // Get group name and participants from user input
         // ensure that input usernames exist 
 
+        if (find(participants.begin(), participants.end(), getCurrentUsername()) == participants.end()) {
+            participants.push_back(getCurrentUsername());
+        }
         // check for empty group name and at least 2 participants
         if (groupName.empty()) {
             cout << "Group name cannot be empty." << endl;
@@ -457,6 +488,7 @@ public:
             cout << "Group must have at least 2 participants." << endl;
             return;
         }
+
         GroupChat* newGroup = new GroupChat(participants, groupName, description, getCurrentUsername());
         chats.push_back(newGroup);
 
@@ -469,6 +501,14 @@ public:
         // FR5 NOTE: method is `const`; drop `const` if you want lastSeen refreshed here.
         // FR10: set messages as read when viewing a chat
         // FR23: Display all participants and admins when viewing a group
+
+        string current = getCurrentUsername();
+        for (Chat* chat : chats) {
+            if (chat && chat->isMember(current)) {
+                chat->markAllAsRead(current);
+                chat->displayChat();
+            }
+        }
     }
     
     // ---- SCRUM-32 (menu wiring): let user pick a chat and export it ----
@@ -514,9 +554,10 @@ public:
                 else if (choice == 3) break;
             }
             else {
-                cout << "\n1. Start Private Chat\n2. Create Group\n3. View Chats\n4. Change Password\n5. Export Chat\n6. Logout\nChoice: ";
+                cout << "\n1. Start Private Chat\n2. Create Group\n3. View Chats\n4. Edit Account\n5. Change Password\n6. Export Chat\n7. Logout\nChoice: ";
                 int choice;
                 cin >> choice;
+                cin.ignore(numeric_limits<streamsize>::max(), '\n'); // flush buffer
 
                 switch (choice) {
                     case 1:
@@ -529,12 +570,54 @@ public:
                         viewChats();
                         break;
                     case 4: {
-                        string newPass;
-                        // TODO: Passwords must not be displayed when typing
-                        cin.ignore(numeric_limits<streamsize>::max(), '\n'); // flush buffer
-                        cout << "Enter new password: " << endl;
-                        getline(cin, newPass);
-                        users[currentUserIndex].changePassword(newPass);
+                        bool editing = true;
+                        while (editing) {
+                            cout << "\n--- Edit Account ---\n";
+                            cout << "1. Change Status\n";
+                            cout << "2. Change Phone Number\n";
+                            cout << "3. Change Password\n";
+                            cout << "4. Back to Main Menu\n";
+                            cout << "Choice: ";
+
+                            int editChoice;
+                            cin >> editChoice;
+                            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+                            switch (editChoice) {
+                                case 1: {
+                                    string newStatus;
+                                    cout << "Enter new status: ";
+                                    getline(cin, newStatus);
+                                    users[currentUserIndex].setStatus(newStatus);
+                                    cout << "Status updated successfully.\n";
+                                    break;
+                                }
+                                case 2: {
+                                    string newPhone;
+                                    do{
+                                        cout << "Enter new phone number: ";
+                                        getline(cin, newPhone);
+                                    } while (!validatePhone(newPhone, currentUserIndex));
+
+                                    users[currentUserIndex].setPhoneNumber(newPhone);
+                                    cout << "Phone number updated successfully.\n";
+                                    break;
+                                }
+                                case 3: {
+                                    // TODO: Passwords must not be displayed when typing
+                                    string newPass;
+                                    cout << "Enter new password: ";
+                                    getline(cin, newPass);
+                                    users[currentUserIndex].changePassword(newPass);
+                                    break;
+                                }
+                                case 4:
+                                    editing = false;
+                                    break;
+                                default:
+                                    cout << "Invalid choice. Please try again.\n";
+                            }
+                        }
                         break;
                     }
                     case 5:
