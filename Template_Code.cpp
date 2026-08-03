@@ -116,7 +116,6 @@ public:
         updateTimestamp();
     }
     
-    // ---- FR11 needs this for display(); also used by FR12 search ----
     string getContent() const {
         return content;
     }
@@ -125,7 +124,6 @@ public:
         return sender;
     }
     
-    // ---- FR11 needs this for display() ----
     string getTimestamp() const {
         return timestamp;
     }
@@ -151,7 +149,6 @@ public:
         // FR7
     }
     
-    // ---- FR11: display shows reply reference (SRS TC5) ----
     void display() const {
         if (replyTo != nullptr) {
             cout << "  \u21B3 Replying to " << replyTo->getSender()
@@ -195,10 +192,13 @@ public:
         chatName = name;
     }
     
+    // ---- SCRUM-34: virtual so `delete chatPtr` runs the right destructor
+    //      for PrivateChat / GroupChat (prevents UB and leaks) ----
+    virtual ~Chat() {}
+    
     void addMessage(const Message& msg) {
         messages.push_back(msg);
         messages[messages.size() - 1].setStatus("Delivered");
-        // TODO: Implement message addition
     }
     
     bool deleteMessage(int index, const string& username) {
@@ -227,7 +227,6 @@ public:
         }
     }
     
-    // ---- FR12: search messages by keyword ----
     vector<Message> searchMessages(string keyword) const {
         vector<Message> results;
         for (const Message& m : messages) {
@@ -367,6 +366,14 @@ private:
     
 public:
     WhatsApp() : currentUserIndex(-1) {}
+    
+    // ---- SCRUM-34: release all Chat* allocations (SRS §7.5, §10.5) ----
+    ~WhatsApp() {
+        for (Chat* c : chats) {
+            delete c;
+        }
+        chats.clear();
+    }
     
     void signUp() {
         // TODO: Implement user registration
