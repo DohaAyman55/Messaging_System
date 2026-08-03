@@ -193,6 +193,10 @@ public:
         chatName = name;
     }
     
+    // ---- SCRUM-34: virtual so `delete chatPtr` runs the right destructor
+    //      for PrivateChat / GroupChat (prevents UB and leaks) ----
+    virtual ~Chat() {}
+    
     void addMessage(const Message& msg) {
         messages.push_back(msg);
         messages[messages.size() - 1].setStatus("Delivered");
@@ -381,6 +385,14 @@ private:
     
 public:
     WhatsApp() : currentUserIndex(-1) {}
+    
+    // ---- SCRUM-34: release all Chat* allocations (SRS §7.5, §10.5) ----
+    ~WhatsApp() {
+        for (Chat* c : chats) {
+            delete c;
+        }
+        chats.clear();
+    }
     
     void signUp() {
         // TODO: Implement user registration
