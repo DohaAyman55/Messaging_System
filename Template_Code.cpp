@@ -300,16 +300,35 @@ public:
         bool IsValidUsername = false;
         bool IsValidPhone = false;
         bool IsValidUserInputs = false;
-        cout << "Enter username: ";
-        cin >> uname;
-        cout << "Enter password: ";
-        cin >> pwd;
-        cout << "Enter phone number: ";
-        cin >> phone;
-        IsValidPassword = validatePassword(pwd);
-        IsValidUsername = validateUsername(uname);
-        IsValidPhone = validatePhone(phone);
+
+        do {
+            cout << "Enter username: ";
+            getline(cin, uname);
+            IsValidUsername = validateUsername(uname);
+            if (!IsValidUsername) {
+                cout << "Invalid username. Please try again." << endl;
+            }
+        } while (!IsValidUsername);
+        do {
+            cout << "Enter password: ";
+            getline(cin, pwd);
+            IsValidPassword = validatePassword(pwd);
+            if (!IsValidPassword) {
+                cout << "Invalid password. Please try again." << endl;
+            }
+        } while (!IsValidPassword);
+        do {
+            cout << "Enter phone number: ";
+            getline(cin, phone);
+            IsValidPhone = validatePhone(phone);
+            if (!IsValidPhone) {
+                cout << "Invalid phone number. Please try again." << endl;
+            }
+        } while (!IsValidPhone);
+ 
         IsValidUserInputs = IsValidPassword && IsValidUsername && IsValidPhone;
+     
+        
         if (IsValidUserInputs) {
             newUser = User(uname, pwd, phone);
             users.push_back(newUser);
