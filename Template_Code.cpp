@@ -231,6 +231,9 @@ private:
 public:
     GroupChat(vector<string> users, string name, string creator) {
         // TODO: Implement constructor
+        participants = users;
+        chatName = name;
+        admins.push_back(creator);
     }
 
     void addAdmin(string newAdmin) {
@@ -238,17 +241,45 @@ public:
     }
 
     bool removeParticipant(const string& admin, const string& userToRemove) {
-        // TODO: Implement remove participant
+        if(!isAdmin(admin)){
+            cout << "Only admins can remove participants." << endl;
+            return false;
+        }
+        else if (isAdmin(userToRemove)) {
+            cout << "Cannot remove an admin from the group." << endl;
+            return false;
+        }
+        else if (!isParticipant(userToRemove)) {
+            cout << "User not found in the group." << endl;
+            return false;
+        }
+        else {
+            for (int i = 0; i < participants.size(); i++) {
+                if (participants[i] == userToRemove) {
+                    participants.erase(participants.begin() + i);
+                    cout << "Participant removed successfully." << endl;
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
     bool isAdmin(string username) const {
-        // TODO: Implement admin check
+        for (const auto& admin : admins) {
+            if (admin == username) {
+                return true;
+            }
+        }
         return false;
     }
 
     bool isParticipant(string username) const {
-        // TODO: Implement participant check
+        for (const auto& participant : participants) {
+            if (participant == username) {
+                return true;
+            }
+        }
         return false;
     }
 
