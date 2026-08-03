@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <string>
 #include <ctime>
@@ -116,7 +117,6 @@ public:
         updateTimestamp();
     }
     
-    // ---- FR11 needs this for display(); also used by FR12 search ----
     string getContent() const {
         return content;
     }
@@ -125,7 +125,6 @@ public:
         return sender;
     }
     
-    // ---- FR11 needs this for display() ----
     string getTimestamp() const {
         return timestamp;
     }
@@ -151,7 +150,6 @@ public:
         // FR7
     }
     
-    // ---- FR11: display shows reply reference (SRS TC5) ----
     void display() const {
         if (replyTo != nullptr) {
             cout << "  \u21B3 Replying to " << replyTo->getSender()
@@ -198,7 +196,6 @@ public:
     void addMessage(const Message& msg) {
         messages.push_back(msg);
         messages[messages.size() - 1].setStatus("Delivered");
-        // TODO: Implement message addition
     }
     
     bool deleteMessage(int index, const string& username) {
@@ -227,7 +224,6 @@ public:
         }
     }
     
-    // ---- FR12: search messages by keyword ----
     vector<Message> searchMessages(string keyword) const {
         vector<Message> results;
         for (const Message& m : messages) {
@@ -238,8 +234,26 @@ public:
         return results;
     }
     
+    // ---- SCRUM-32: export chat to file ----
     void exportToFile(const string& filename) const {
-        // TODO: Implement export to file
+        ofstream out(filename);
+        if (!out.is_open()) {
+            cout << "Failed to open file: " << filename << endl;
+            return;
+        }
+        out << "Chat: " << chatName << "\n";
+        out << "Participants: ";
+        for (size_t i = 0; i < participants.size(); ++i) {
+            out << participants[i];
+            if (i + 1 < participants.size()) out << ", ";
+        }
+        out << "\n\n";
+        for (const Message& m : messages) {
+            out << "[" << m.getTimestamp() << "] "
+                << m.getSender() << ": " << m.getContent() << "\n";
+        }
+        out.close();
+        cout << "Chat exported to " << filename << endl;
     }
 };
 
