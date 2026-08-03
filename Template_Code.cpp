@@ -395,6 +395,29 @@ public:
         //   users[currentUserIndex].updateLastSeen();
         // set isLogged in to true and currentUserIndex to the index of 
         // the logged-in user using findUserIndex()
+        string uname, pwd;
+        cout << "\n=== User Login ===\n";
+        cout << "Enter Username: ";
+        cin >> uname;
+        
+        int index = findUserIndex(uname);
+        
+        if (index == -1) {
+            cout << "[Error] User not found!\n";
+            return;
+        }
+        
+        cout << "Enter Password: ";
+        cin >> pwd;
+        
+        if (users[index].checkPassword(pwd)) {
+            currentUserIndex = index;
+            users[currentUserIndex].setStatus("Online");
+            users[currentUserIndex].updateLastSeen();
+            cout << "\n[Success] Logged in successfully! Welcome, " << getCurrentUsername() << "!\n";
+        } else {
+            cout << "[Error] Incorrect password!\n";
+        }
     }
     
     void startPrivateChat() {
