@@ -1,13 +1,14 @@
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <string>
 #include <ctime>
 #include <limits>
+#include <algorithm> 
 using namespace std;
 
 // HELPER FUNCTION
 bool validatePassword(string pwd) {
-    // TODO: Implement password validation (FR3)
    if (pwd.length() >= 6){
         return true;
     }else{
@@ -37,8 +38,7 @@ public:
     }
     
     string getUsername() const {
-        // TODO: Implement getter
-        return "";
+        return username;
     }
     
     string getPhoneNumber() const {
@@ -50,19 +50,18 @@ public:
     }
     
     string getLastSeen() const {
-        // TODO: Implement getter
-        return "";
+        return lastSeen;
     }
     
     void setStatus(string newStatus) {
-            status = newStatus;
-            updateLastSeen(); // FR5
+        status = newStatus;
+        updateLastSeen(); // FR5
     }
     
     void setPhoneNumber(string phone) {
-    phoneNumber = phone;
-    updateLastSeen(); // FR5
-   }
+        phoneNumber = phone;
+        updateLastSeen(); // FR5
+    }
     
     void updateLastSeen() {
         time_t now = time(nullptr);
@@ -72,7 +71,9 @@ public:
     }
     
     bool checkPassword(string pwd) const {
-        // TODO: Implement password check
+        if (pwd == password) {
+            return true;
+        }
         return false;
     }
     
@@ -103,23 +104,20 @@ private:
 public:
     Message() {
         sender = "";
-    content = "";
-    status = "Sent";
-    replyTo = nullptr;
-    updateTimestamp();
-        // TODO: Implement default constructor
+        content = "";
+        status = "";
+        replyTo = nullptr;
+        updateTimestamp();
     }
     
     Message(string sndr, string cntnt) { 
-        sender = "";
-    content = "";
-    status = "Sent";
-    replyTo = nullptr;
-    updateTimestamp();
-        // TODO: Implement parameterized constructor
+        sender = sndr;
+        content = cntnt;
+        status = "Sent";
+        replyTo = nullptr;
+        updateTimestamp();
     }
     
-    // ---- FR11 needs this for display(); also used by FR12 search ----
     string getContent() const {
       messagesstatus
         // TODO: Implement getter
@@ -132,14 +130,12 @@ public:
         return sender;
     }
     
-    // ---- FR11 needs this for display() ----
     string getTimestamp() const {
         return timestamp;
     }
     
     string getStatus() const {
-        // TODO: Implement getter
-        return "";
+        return status;
     }
     
     Message* getReplyTo() const {
@@ -149,6 +145,11 @@ public:
     void setStatus(string newStatus) {
         status = newStatus
         // TODO: Implement setter
+        status = newStatus;
+    }
+
+    void markAsRead() {
+        status = "Read";
     }
     
     void setReplyTo(Message* msg) {
@@ -157,9 +158,9 @@ public:
     
     void updateTimestamp() {
         // TODO: Implement timestamp update
+        // FR7
     }
     
-    // ---- FR11: display shows reply reference (SRS TC5) ----
     void display() const {
       messagesstatus
         string icon = "✓";
@@ -175,10 +176,19 @@ public:
 
         if (replyTo != nullptr) {
             cout << "  \u21B3 Replying to " << replyTo->getSender()
-                 << ": \"" << replyTo->getContent() << "\"" << endl;
+                << ": \"" << replyTo->getContent() << "\"" << endl;
         }
-        cout << "[" << timestamp << "] " << sender << ": " << content << endl;
- main
+
+        string icon = "✓";
+        if (status == "Delivered") {
+            icon = "✓✓";
+        }
+        else if (status == "Read") {
+            icon = "✓✓ (Read)";
+        }
+
+        cout << "[" << timestamp << "] " << sender << ": " << content << " " << icon << endl;
+
     }
     
     void addEmoji(string emojiCode) {
@@ -197,12 +207,33 @@ protected:
     
 public:
     Chat() {
-        // TODO: Implement default constructor
+        participants = {};
+        messages = {};
+        chatName = "";
     }
     
     Chat(vector<string> users, string name) {
         participants = users;
         chatName = name;
+    }
+    
+    // ---- SCRUM-34: virtual so `delete chatPtr` runs the right destructor
+    //      for PrivateChat / GroupChat (prevents UB and leaks) ----
+    virtual ~Chat() {}
+
+    bool isMember(const string& username) const {
+        for (const auto& p : participants) {
+            if (p == username) return true;
+        }
+        return false;
+    }
+
+    void markAllAsRead(const string& viewer) {
+        for (Message& msg : messages) {
+            if (msg.getSender() != viewer) {
+                msg.markAsRead();
+            }
+        }
     }
     
     void addMessage(const Message& msg) {
@@ -231,10 +262,17 @@ public:
     }
     
     virtual void displayChat() const {
-        // TODO: Implement chat display
+        cout << chatName << endl;
+        for (const Message& msg : messages) {
+            msg.display();
+        }
     }
     
-    // ---- FR12: search messages by keyword ----
+    // Accessor used by the export-chat menu option
+    string getChatName() const {
+        return chatName;
+    }
+    
     vector<Message> searchMessages(string keyword) const {
         vector<Message> results;
         for (const Message& m : messages) {
@@ -245,8 +283,26 @@ public:
         return results;
     }
     
+    // ---- SCRUM-32: export chat to file ----
     void exportToFile(const string& filename) const {
-        // TODO: Implement export to file
+        ofstream out(filename);
+        if (!out.is_open()) {
+            cout << "Failed to open file: " << filename << endl;
+            return;
+        }
+        out << "Chat: " << chatName << "\n";
+        out << "Participants: ";
+        for (size_t i = 0; i < participants.size(); ++i) {
+            out << participants[i];
+            if (i + 1 < participants.size()) out << ", ";
+        }
+        out << "\n\n";
+        for (const Message& m : messages) {
+            out << "[" << m.getTimestamp() << "] "
+                << m.getSender() << ": " << m.getContent() << "\n";
+        }
+        out.close();
+        cout << "Chat exported to " << filename << endl;
     }
 };
 
@@ -259,8 +315,10 @@ private:
     string user2;
     
 public:
-    PrivateChat(string u1, string u2) {
-        // TODO: Implement constructor
+    PrivateChat(string u1, string u2) 
+        : Chat({u1, u2}, "Chat between " + u1 + " and " + u2) {
+       user1 = u1;
+       user2 = u2;
     }
     
     void displayChat() const override {
@@ -284,12 +342,10 @@ private:
     string description;
     
 public:
-    GroupChat(vector<string> users, string name, string creator) : Chat(users, name) {
-        // TODO: Implement constructor
-        // add data of parent class (Chat)
-
-        // FR18: Creator becomes admin automatically
-        admins.push_back(creator); 
+    GroupChat(vector<string> users, string name, string description, string creator) 
+        : Chat(users, name) { 
+            this->description = description;
+            admins.push_back(creator); 
     }
     
     void addAdmin(string newAdmin) {
@@ -302,23 +358,43 @@ public:
     }
     
     bool isAdmin(string username) const {
-        // TODO: Implement admin check
+        for (const auto& a : admins) {
+            if (a == username) {
+                return true;
+            }
+        }
         return false;
     }
     
     bool isParticipant(string username) const {
-        // TODO: Implement participant check
-        return false;
+        return isMember(username);
     }
     
+    string getDescription() const {
+        return description;
+    }
+
     void setDescription(string desc) {
-        // TODO: Implement set description
+        description = desc;
     }
     
     void displayChat() const override {
-        // TODO: Implement group chat display
-    }
-    
+        cout << "\nGroup: " << chatName << endl;
+        cout << "Participants: ";
+        for (const auto& p : participants) {
+            cout << p << endl;
+        }
+        cout << endl;
+        cout << "Admins: ";
+        for (const auto& a : admins) {
+            cout << a << " ";
+        }
+        cout << endl;
+        cout << "Description: " << (description.empty() ? "No description available" : description) << "\n";
+
+        Chat::displayChat();
+    } 
+
     void sendJoinRequest(const string& username) {
         // TODO: Implement join request
     }
@@ -332,6 +408,7 @@ private:
     vector<User> users;
     vector<Chat*> chats;
     int currentUserIndex;
+    bool loggedIn = false;
     
     int findUserIndex(string username) const {
         // TODO: Implement user search
@@ -339,8 +416,7 @@ private:
     }
     
     bool isLoggedIn() const {
-        // TODO: Implement login check
-        return false;
+        return loggedIn;
     }
     
     string getCurrentUsername() const {
@@ -352,6 +428,14 @@ private:
     
 public:
     WhatsApp() : currentUserIndex(-1) {}
+    
+    // ---- SCRUM-34: release all Chat* allocations (SRS §7.5, §10.5) ----
+    ~WhatsApp() {
+        for (Chat* c : chats) {
+            delete c;
+        }
+        chats.clear();
+    }
     
     void signUp() {
         // TODO: Implement user registration
@@ -367,25 +451,25 @@ public:
         return true;
     }
     
-    bool validatePhone(string phone) {
+    bool validatePhone(string phone, int excludeUserIndex = -1) {
   
         if (phone.length() != 11) {
             cout << "Phone number must be 11 digits long." << endl;
             return false;
         }
-        else if (phone[0] != '0' || phone[1] != '1') {
+        if (phone[0] != '0' || phone[1] != '1') {
             cout << "Phone number must start with '01'." << endl;
             return false;
         }
-        else {
-            for (const auto& user : users) {
-                if (user.getPhoneNumber() == phone) {
-                    cout << "Phone number already exists. Please use a different phone number." << endl;
-                    return false;
-                }
+         
+        for (size_t i = 0; i < users.size(); ++i) {
+            if ((int)i == excludeUserIndex) continue;
+            if (users[i].getPhoneNumber() == phone) {
+                cout << "Phone number already exists. Please use a different phone number." << endl;
+                return false;
             }
         }
-
+                
         return true;
     }
     
@@ -431,9 +515,26 @@ public:
         // FR17: Groups require a name and at least 2 participants
         vector<string> participants;
         string groupName;
+        string description;
+        
+        // FR17
+        // Get group name and participants from user input
+        // ensure that input usernames exist 
 
-        // FR18: Creator becomes admin automatically
-        GroupChat* newGroup = new GroupChat(participants, groupName, getCurrentUsername());
+        if (find(participants.begin(), participants.end(), getCurrentUsername()) == participants.end()) {
+            participants.push_back(getCurrentUsername());
+        }
+        // check for empty group name and at least 2 participants
+        if (groupName.empty()) {
+            cout << "Group name cannot be empty." << endl;
+            return;
+        }
+        if (participants.size() < 2) {
+            cout << "Group must have at least 2 participants." << endl;
+            return;
+        }
+
+        GroupChat* newGroup = new GroupChat(participants, groupName, description, getCurrentUsername());
         chats.push_back(newGroup);
 
         // FR5 HOOK (please call at end):
@@ -443,13 +544,47 @@ public:
     void viewChats() const {
         // TODO: Implement chat viewing
         // FR5 NOTE: method is `const`; drop `const` if you want lastSeen refreshed here.
+        // FR10: set messages as read when viewing a chat
         // FR23: Display all participants and admins when viewing a group
+
+        string current = getCurrentUsername();
+        for (Chat* chat : chats) {
+            if (chat && chat->isMember(current)) {
+                chat->markAllAsRead(current);
+                chat->displayChat();
+            }
+        }
+    }
+    
+    // ---- SCRUM-32 (menu wiring): let user pick a chat and export it ----
+    void exportChat() {
+        if (chats.empty()) {
+            cout << "No chats to export." << endl;
+            return;
+        }
+        cout << "\nSelect a chat to export:\n";
+        for (size_t i = 0; i < chats.size(); ++i) {
+            cout << (i + 1) << ". " << chats[i]->getChatName() << "\n";
+        }
+        cout << "Choice: ";
+        int idx;
+        cin >> idx;
+        if (idx < 1 || idx > (int)chats.size()) {
+            cout << "Invalid choice." << endl;
+            return;
+        }
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << "Filename: ";
+        string filename;
+        getline(cin, filename);
+        chats[idx - 1]->exportToFile(filename);
+        users[currentUserIndex].updateLastSeen(); // FR5
     }
     
     void logout() {
-        // TODO: Implement logout
-        // FR5 HOOK (please call BEFORE resetting currentUserIndex to -1):
-        //   users[currentUserIndex].updateLastSeen();
+        users[currentUserIndex].updateLastSeen();
+        currentUserIndex = -1;
+        loggedIn = false;
     }
     
     void run() {
@@ -464,22 +599,81 @@ public:
                 else if (choice == 3) break;
             }
             else {
-                cout << "\n1. Start Private Chat\n2. Create Group\n3. View Chats\n4. Change Password\n5. Logout\nChoice: ";
+                cout << "\n1. Start Private Chat\n2. Create Group\n3. View Chats\n4. Edit Account\n5. Change Password\n6. Export Chat\n7. Logout\nChoice: ";
                 int choice;
                 cin >> choice;
-                
-                if (choice == 1) startPrivateChat();
-                else if (choice == 2) createGroup();
-                else if (choice == 3) viewChats();
-                else if (choice == 4) {
-                    string newPass;
-                    // TODO: Passwords must not be displayed when typing
-                    cin.ignore(numeric_limits<streamsize>::max(), '\n'); // flush buffer
-                    cout << "Enter new password: " << endl;
-                    getline(cin, newPass);
-                    users[currentUserIndex].changePassword(newPass);
+                cin.ignore(numeric_limits<streamsize>::max(), '\n'); // flush buffer
+
+                switch (choice) {
+                    case 1:
+                        startPrivateChat();
+                        break;
+                    case 2:
+                        createGroup();
+                        break;
+                    case 3:
+                        viewChats();
+                        break;
+                    case 4: {
+                        bool editing = true;
+                        while (editing) {
+                            cout << "\n--- Edit Account ---\n";
+                            cout << "1. Change Status\n";
+                            cout << "2. Change Phone Number\n";
+                            cout << "3. Change Password\n";
+                            cout << "4. Back to Main Menu\n";
+                            cout << "Choice: ";
+
+                            int editChoice;
+                            cin >> editChoice;
+                            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+                            switch (editChoice) {
+                                case 1: {
+                                    string newStatus;
+                                    cout << "Enter new status: ";
+                                    getline(cin, newStatus);
+                                    users[currentUserIndex].setStatus(newStatus);
+                                    cout << "Status updated successfully.\n";
+                                    break;
+                                }
+                                case 2: {
+                                    string newPhone;
+                                    do{
+                                        cout << "Enter new phone number: ";
+                                        getline(cin, newPhone);
+                                    } while (!validatePhone(newPhone, currentUserIndex));
+
+                                    users[currentUserIndex].setPhoneNumber(newPhone);
+                                    cout << "Phone number updated successfully.\n";
+                                    break;
+                                }
+                                case 3: {
+                                    // TODO: Passwords must not be displayed when typing
+                                    string newPass;
+                                    cout << "Enter new password: ";
+                                    getline(cin, newPass);
+                                    users[currentUserIndex].changePassword(newPass);
+                                    break;
+                                }
+                                case 4:
+                                    editing = false;
+                                    break;
+                                default:
+                                    cout << "Invalid choice. Please try again.\n";
+                            }
+                        }
+                        break;
+                    }
+                    case 5:
+                        exportChat();
+                        break;
+                    case 6:
+                        logout();
+                        break;
+                    default:
+                        cout << "Invalid choice. Please try again." << endl;
                 }
-                else if (choice == 5) logout();
             }
         }
     }
