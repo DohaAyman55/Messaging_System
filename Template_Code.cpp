@@ -5,14 +5,66 @@
 #include <ctime>
 #include <limits>
 #include <algorithm> 
+
+#ifdef _WIN32
+    #include <conio.h>
+#else
+    #include <termios.h>
+    #include <unistd.h>
+#endif
+
 using namespace std;
 
-// HELPER FUNCTION
+// HELPER FUNCTIONS
 bool validatePassword(string pwd) {
    if (pwd.length() >= 6){
         return true;
     }else{
     return false;}
+}
+
+string getHiddenPassword(const string& prompt) {
+    cout << prompt;
+    string pwd;
+
+#ifdef _WIN32
+    char ch;
+    while ((ch = _getch()) != '\r') {
+        if (ch == '\b') { 
+            if (!pwd.empty()) {
+                pwd.pop_back();
+                cout << "\b \b";
+            }
+        } else {
+            pwd.push_back(ch);
+            cout << '*';
+        }
+    }
+#else
+    termios oldt, newt;
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+    newt.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+
+    char ch;
+    while (cin.get(ch) && ch != '\n') {
+        if (ch == 127 || ch == '\b') {
+            if (!pwd.empty()) {
+                pwd.pop_back();
+                cout << "\b \b";
+            }
+        } else {
+            pwd.push_back(ch);
+            cout << '*';
+        }
+    }
+
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+#endif
+
+    cout << endl;
+    return pwd;
 }
 
 // ========================
@@ -405,7 +457,11 @@ private:
     bool loggedIn = false;
     
     int findUserIndex(string username) const {
-        // TODO: Implement user search
+        for (size_t i = 0; i < users.size(); ++i) {
+            if (users[i].getUsername() == username) {
+                return i;
+            }
+        }
         return -1;
     }
 
@@ -432,46 +488,32 @@ public:
     }
 
     void signUp() {
-        // TODO: Implement user registration
         User newUser;
         string uname, pwd, phone;
-        bool IsValidPassword = false;
-        bool IsValidUsername = false;
-        bool IsValidPhone = false;
-        bool IsValidUserInputs = false;
+        bool valid;
 
         do {
             cout << "Enter username: ";
             getline(cin, uname);
-            IsValidUsername = validateUsername(uname);
-            if (!IsValidUsername) {
-                cout << "Invalid username. Please try again." << endl;
-            }
-        } while (!IsValidUsername);
+            valid = validateUsername(uname);
+            if (!valid) cout << "Invalid username. Please try again." << endl;
+        } while (!valid);
+
         do {
-            cout << "Enter password: ";
-            getline(cin, pwd);
-            IsValidPassword = validatePassword(pwd);
-            if (!IsValidPassword) {
-                cout << "Invalid password. Please try again." << endl;
-            }
-        } while (!IsValidPassword);
+            pwd = getHiddenPassword("Enter password: ");
+            valid = validatePassword(pwd);
+            if (!valid) cout << "Invalid password. Please try again." << endl;
+        } while (!valid);
+
         do {
             cout << "Enter phone number: ";
             getline(cin, phone);
-            IsValidPhone = validatePhone(phone);
-            if (!IsValidPhone) {
-                cout << "Invalid phone number. Please try again." << endl;
-            }
-        } while (!IsValidPhone);
- 
-        IsValidUserInputs = IsValidPassword && IsValidUsername && IsValidPhone;
-     
-        
-        if (IsValidUserInputs) {
-            newUser = User(uname, pwd, phone);
-            users.push_back(newUser);
-        }
+            valid = validatePhone(phone);
+            if (!valid) cout << "Invalid phone number. Please try again." << endl;
+        } while (!valid);
+
+        newUser = User(uname, pwd, phone);
+        users.push_back(newUser);
     }
 
     bool validateUsername(string uname) {
@@ -514,7 +556,7 @@ public:
         string uname, pwd;
         cout << "\n=== User Login ===\n";
         cout << "Enter Username: ";
-        cin >> uname;
+        getline(cin, uname);
         
         int index = findUserIndex(uname);
         
@@ -522,9 +564,8 @@ public:
             cout << "[Error] User not found!\n";
             return;
         }
-        
-        cout << "Enter Password: ";
-        cin >> pwd;
+
+        pwd = getHiddenPassword("Enter Password: ");
         
         if (users[index].checkPassword(pwd)) {
             currentUserIndex = index;
@@ -626,6 +667,7 @@ public:
                 cout << "\n1. Login\n2. Sign Up\n3. Exit\nChoice: ";
                 int choice;
                 cin >> choice;
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
                 if (choice == 1) login();
                 else if (choice == 2) signUp();
@@ -635,7 +677,7 @@ public:
                 cout << "\n1. Start Private Chat\n2. Create Group\n3. View Chats\n4. Edit Account\n5. Change Password\n6. Export Chat\n7. Logout\nChoice: ";
                 int choice;
                 cin >> choice;
-                cin.ignore(numeric_limits<streamsize>::max(), '\n'); // flush buffer
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
                 switch (choice) {
                     case 1:
@@ -682,10 +724,7 @@ public:
                                     break;
                                 }
                                 case 3: {
-                                    // TODO: Passwords must not be displayed when typing
-                                    string newPass;
-                                    cout << "Enter new password: ";
-                                    getline(cin, newPass);
+                                    string newPass = getHiddenPassword("Enter new password: ");
                                     users[currentUserIndex].changePassword(newPass);
                                     break;
                                 }
