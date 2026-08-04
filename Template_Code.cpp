@@ -757,7 +757,7 @@ public:
         users[currentUserIndex].updateLastSeen();
     }
 
-    void viewChats() const {
+    void viewChats() {
         // FR5 NOTE: method is `const`; drop `const` if you want lastSeen refreshed here.
         // FR10: set messages as read when viewing a chat
         // FR23: Display all participants and admins when viewing a group
@@ -769,6 +769,8 @@ public:
                 chat->displayChat();
             }
         }
+
+        users[currentUserIndex].updateLastSeen(); // FR5
     }
     
     // ---- SCRUM-32 (menu wiring): let user pick a chat and export it ----
