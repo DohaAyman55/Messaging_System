@@ -447,7 +447,17 @@ public:
     }
 
     void showTypingIndicator(const string& username) const {
-        // TODO: Implement typing indicator
+        if (isMember(username)) {
+            cout << "\r" << username << " is typing";
+            for (int i = 0; i < 3; ++i) {
+                cout << ".";
+                cout.flush();
+            }
+            cout << "\r\033[K";
+            cout.flush();
+        } else {
+            cout << "User not found in this chat." << endl;
+        }
     }
 };
 
