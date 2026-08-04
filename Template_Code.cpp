@@ -840,14 +840,25 @@ public:
 
             switch(option){
                 case 1: {
-                string content;
-                cout << "Enter message: ";
-                getline(cin, content);
-                Message msg(getCurrentUsername(), content);
-                chat->addMessage(msg);
-                break;
+                    PrivateChat* pc = dynamic_cast<PrivateChat*>(chat);
+                    if (pc) {
+                        pc->showTypingIndicator(getCurrentUsername());
+                    }
+
+                    string content;
+                    cout << "Enter message: ";
+
+                    getline(cin, content);
+                    Message msg(getCurrentUsername(), content);
+                    chat->addMessage(msg);
+                    break;
                 }
                 case 2: {
+                    PrivateChat* pc = dynamic_cast<PrivateChat*>(chat);
+                    if (pc) {
+                        pc->showTypingIndicator(getCurrentUsername());
+                    }
+
                     int replyIndex;
                     cout << "Reply to message #: ";
                     cin >> replyIndex;
@@ -1052,6 +1063,7 @@ public:
             }
         }
     }
+
     void run() {
         while (true) {
             if (!isLoggedIn()) {
