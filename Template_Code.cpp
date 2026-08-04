@@ -80,7 +80,6 @@ private:
 
 public:
     User() {
-        // TODO: Implement default constructor
         // FR5 HOOK (please call at end): updateLastSeen();
         username = "";
         password = "";
@@ -90,7 +89,6 @@ public:
     }
 
     User(string uname, string pwd, string phone) {
-        // TODO: Implement parameterized constructor
         // FR5 HOOK (please call at end): updateLastSeen();
         username = uname;
         password = pwd;
@@ -280,7 +278,6 @@ public:
     void addMessage(const Message& msg) {
         messages.push_back(msg);
         messages[messages.size() - 1].setStatus("Delivered");
-        // TODO: Implement message addition
     }
 
     bool deleteMessage(int index, const string& username) {
@@ -364,10 +361,7 @@ public:
 
     void displayChat() const override {
         cout << "\n--- Private Chat: " << user1 << " & " << user2 << " ---\n";
-        for (int i = 0; i < messages.size(); i++) {
-            messages[i].display();
-            // TODO: Implement private chat display
-        }
+        Chat::displayChat();
     }
 
     void showTypingIndicator(const string& username) const {
@@ -514,6 +508,7 @@ public:
 
         newUser = User(uname, pwd, phone);
         users.push_back(newUser);
+        cout << "User registered successfully! You can now log in." << endl;
     }
 
     bool validateUsername(string uname) {
@@ -548,7 +543,6 @@ public:
     }
 
     void login() {
-        // TODO: Implement user login
         // FR5 HOOK (please call after successful auth):
         //   users[currentUserIndex].updateLastSeen();
         // set logged in to true and currentUserIndex to the index of 
@@ -616,7 +610,6 @@ public:
     }
 
     void viewChats() const {
-        // TODO: Implement chat viewing
         // FR5 NOTE: method is `const`; drop `const` if you want lastSeen refreshed here.
         // FR10: set messages as read when viewing a chat
         // FR23: Display all participants and admins when viewing a group
@@ -674,7 +667,7 @@ public:
                 else if (choice == 3) break;
             }
             else {
-                cout << "\n1. Start Private Chat\n2. Create Group\n3. View Chats\n4. Edit Account\n5. Change Password\n6. Export Chat\n7. Logout\nChoice: ";
+                cout << "\n1. Start Private Chat\n2. Create Group\n3. View Chats\n4. Edit Account\n5. Export Chat\n6. Logout\nChoice: ";
                 int choice;
                 cin >> choice;
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
