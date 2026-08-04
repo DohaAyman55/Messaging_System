@@ -80,6 +80,7 @@ private:
 
 public:
     User() {
+        // TODO: Implement default constructor
         // FR5 HOOK (please call at end): updateLastSeen();
         username = "";
         password = "";
@@ -89,6 +90,7 @@ public:
     }
 
     User(string uname, string pwd, string phone) {
+        // TODO: Implement parameterized constructor
         // FR5 HOOK (please call at end): updateLastSeen();
         username = uname;
         password = pwd;
@@ -156,14 +158,27 @@ private:
     string content;
     string timestamp;
     string status;
-    Message* replyTo;
+
+    // ---- Reply-safety branch ----
+    // A Message used to store `Message* replyTo`, a raw pointer INTO
+    // Chat::messages (a vector<Message>). That's unsafe for two reasons:
+    //   1) Deleting the original message left the pointer dangling.
+    //   2) Even without any deletion, vector<Message>::push_back() can
+    //      reallocate and move every existing Message in memory, silently
+    //      invalidating every replyTo pointer in the whole chat.
+    // Fix: store a SNAPSHOT of the sender/content being replied to instead
+    // of a pointer to the live object. Nothing to dangle, and the quoted
+    // preview keeps showing correctly even after the original is deleted.
+    bool isReply;
+    string replyToSender;
+    string replyToContent;
 
 public:
     Message() {
         sender = "";
         content = "";
         status = "";
-        replyTo = nullptr;
+        isReply = false;
         updateTimestamp();
     }
     
@@ -171,7 +186,7 @@ public:
         sender = sndr;
         content = cntnt;
         status = "Sent";
-        replyTo = nullptr;
+        isReply = false;
         updateTimestamp();
     }
 
@@ -191,8 +206,16 @@ public:
         return status;
     }
 
-    Message* getReplyTo() const {
-        return replyTo;
+    bool hasReply() const {
+        return isReply;
+    }
+
+    string getReplyToSender() const {
+        return replyToSender;
+    }
+
+    string getReplyToContent() const {
+        return replyToContent;
     }
 
     void setStatus(string newStatus) {
@@ -203,8 +226,20 @@ public:
         status = "Read";
     }
 
-    void setReplyTo(Message* msg) {
-        replyTo = msg;
+    // Takes a snapshot of `original` (sender + content) at the moment of
+    // replying. Deliberately NOT a pointer/reference kept for later use -
+    // this message owns its own copy, so it survives the original being
+    // deleted, edited, or the vector it lived in being reallocated.
+    void setReplyTo(const Message& original) {
+        isReply = true;
+        replyToSender = original.getSender();
+        replyToContent = original.getContent();
+    }
+
+    void clearReply() {
+        isReply = false;
+        replyToSender = "";
+        replyToContent = "";
     }
 
     void updateTimestamp() {
@@ -213,9 +248,9 @@ public:
     }
 
     void display() const {
-        if (replyTo != nullptr) {
-            cout << "  \u21B3 Replying to " << replyTo->getSender()
-                << ": \"" << replyTo->getContent() << "\"" << endl;
+        if (isReply) {
+            cout << "  \u21B3 Replying to " << replyToSender
+                << ": \"" << replyToContent << "\"" << endl;
         }
 
         string icon = "✓";
@@ -278,6 +313,24 @@ public:
     void addMessage(const Message& msg) {
         messages.push_back(msg);
         messages[messages.size() - 1].setStatus("Delivered");
+        // TODO: Implement message addition
+    }
+
+    // ---- Reply-safety branch ----
+    // Overload for sending a message that replies to an existing message
+    // in this chat. `replyToIndex` is looked up and its sender/content are
+    // snapshotted into the new message via Message::setReplyTo() BEFORE
+    // the new message is stored - no pointer into `messages` is ever kept.
+    // Returns false if replyToIndex is out of range.
+    bool addMessage(const Message& msg, int replyToIndex) {
+        if (replyToIndex < 0 || replyToIndex >= (int)messages.size()) {
+            return false;
+        }
+        Message newMsg = msg;
+        newMsg.setReplyTo(messages[replyToIndex]);
+        messages.push_back(newMsg);
+        messages.back().setStatus("Delivered");
+        return true;
     }
 
     bool deleteMessage(int index, const string& username) {
@@ -288,13 +341,12 @@ public:
             return false;
         }
 
-        Message* deletedPtr = &messages[index];
-        for (size_t i = 0; i < messages.size(); ++i) {
-            if (messages[i].getReplyTo() == deletedPtr) {
-                messages[i].setReplyTo(nullptr);
-            }
-        }
-
+        // ---- Reply-safety branch ----
+        // Replies no longer hold a pointer into `messages`, so there is no
+        // dangling-pointer cleanup to do here anymore: any message that
+        // replied to messages[index] already has its own private copy of
+        // that message's sender/content and keeps displaying it correctly
+        // after this erase.
         messages.erase(messages.begin() + index);
         return true;
     }
@@ -361,7 +413,10 @@ public:
 
     void displayChat() const override {
         cout << "\n--- Private Chat: " << user1 << " & " << user2 << " ---\n";
-        Chat::displayChat();
+        for (int i = 0; i < messages.size(); i++) {
+            messages[i].display();
+            // TODO: Implement private chat display
+        }
     }
 
     void showTypingIndicator(const string& username) const {
@@ -543,6 +598,7 @@ public:
     }
 
     void login() {
+        // TODO: Implement user login
         // FR5 HOOK (please call after successful auth):
         //   users[currentUserIndex].updateLastSeen();
         // set logged in to true and currentUserIndex to the index of 
@@ -610,6 +666,7 @@ public:
     }
 
     void viewChats() const {
+        // TODO: Implement chat viewing
         // FR5 NOTE: method is `const`; drop `const` if you want lastSeen refreshed here.
         // FR10: set messages as read when viewing a chat
         // FR23: Display all participants and admins when viewing a group
