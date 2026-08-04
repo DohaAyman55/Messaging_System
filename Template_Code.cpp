@@ -460,7 +460,7 @@ public:
         // TODO: Implement user login
         // FR5 HOOK (please call after successful auth):
         //   users[currentUserIndex].updateLastSeen();
-        // set isLogged in to true and currentUserIndex to the index of 
+        // set logged in to true and currentUserIndex to the index of 
         // the logged-in user using findUserIndex()
         string uname, pwd;
         cout << "\n=== User Login ===\n";
@@ -481,6 +481,7 @@ public:
             currentUserIndex = index;
             users[currentUserIndex].setStatus("Online");
             users[currentUserIndex].updateLastSeen();
+            loggedIn = true;
             cout << "\n[Success] Logged in successfully! Welcome, " << getCurrentUsername() << "!\n";
         } else {
             cout << "[Error] Incorrect password!\n";
