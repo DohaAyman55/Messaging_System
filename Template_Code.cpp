@@ -17,10 +17,7 @@ using namespace std;
 
 // HELPER FUNCTIONS
 bool validatePassword(string pwd) {
-   if (pwd.length() >= 6){
-        return true;
-    }else{
-    return false;}
+   return pwd.length() >= 6;
 }
 
 string getHiddenPassword(const string& prompt) {
@@ -383,8 +380,9 @@ public:
 
     virtual void displayChat() const {
         cout << chatName << endl;
-        for (const Message& msg : messages) {
-            msg.display();
+        for (size_t i = 0; i < messages.size(); i++) {
+            cout << i + 1 << ". ";
+            messages[i].display();
         }
     }
     
@@ -688,7 +686,6 @@ public:
         
         if (users[index].checkPassword(pwd)) {
             currentUserIndex = index;
-            users[currentUserIndex].setStatus("Online");
             users[currentUserIndex].updateLastSeen();
             loggedIn = true;
             cout << "\n[Success] Logged in successfully! Welcome, " << getCurrentUsername() << "!\n";
@@ -710,6 +707,16 @@ public:
             cout << "User does not exist." << endl;
         }
         else {
+            for (Chat* chat : chats) {
+                PrivateChat* pc = dynamic_cast<PrivateChat*>(chat);
+                if (pc &&
+                    chat->isMember(getCurrentUsername()) &&
+                    chat->isMember(username)) {
+
+                    cout << "Private chat already exists.\n";
+                    return;
+                }
+            }
             Chat* newChat = new PrivateChat(getCurrentUsername(), username);
             chats.push_back(newChat);
 
@@ -772,31 +779,215 @@ public:
         // FR10: set messages as read when viewing a chat
         // FR23: Display all participants and admins when viewing a group
 
-        string current = getCurrentUsername();
+        vector<Chat*> myChats;
+
         for (Chat* chat : chats) {
-            if (chat && chat->isMember(current)) {
-                chat->markAllAsRead(current);
-                chat->displayChat();
+            if (chat && chat->isMember(getCurrentUsername()))
+                myChats.push_back(chat);
+        }
+
+        if (myChats.empty()) {
+            cout << "You have no chats.\n";
+            users[currentUserIndex].updateLastSeen();
+            return;
+        }
+
+        cout << "\nYour Chats:\n";
+        for (size_t i = 0; i < myChats.size(); ++i)
+            cout << i + 1 << ". " << myChats[i]->getChatName() << '\n';
+
+        cout << "Choice (0 to cancel): ";
+        int chatChoice;
+        cin >> chatChoice;
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+        if (chatChoice <= 0 || chatChoice > (int)myChats.size()){
+            users[currentUserIndex].updateLastSeen();
+            return;
+        }
+
+        Chat* selected = myChats[chatChoice - 1];
+        selected->markAllAsRead(getCurrentUsername());
+        // selected->displayChat();
+        users[currentUserIndex].updateLastSeen();
+        openChat(selected);
+    }
+
+    void openChat(Chat* chat){
+        bool inChat = true;
+        GroupChat* group = dynamic_cast<GroupChat*>(chat);
+        while (inChat) {
+
+            cout << "\n==============================\n";
+            chat->displayChat();
+
+            cout << "\n1. Send Message\n";
+            cout << "2. Reply to Message\n";
+            cout << "3. Delete My Message\n";
+            cout << "4. Search Messages\n";
+
+            if (group) {
+                cout << "5. Group Settings\n";
+                cout << "6. Back\n";
+            }
+            else {
+                cout << "5. Back\n";
+            }
+
+            int option;
+            cin >> option;
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+            switch(option){
+                case 1: {
+                string content;
+                cout << "Enter message: ";
+                getline(cin, content);
+                Message msg(getCurrentUsername(), content);
+                chat->addMessage(msg);
+                break;
+                }
+                case 2: {
+                    int replyIndex;
+                    cout << "Reply to message #: ";
+                    cin >> replyIndex;
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    replyIndex--; // Convert to 0-based index
+
+                    
+                    string replyContent;
+                    cout << "Enter your reply: ";
+                    getline(cin, replyContent);
+                    Message replyMsg(getCurrentUsername(), replyContent);
+
+                    if (!chat->addMessage(replyMsg, replyIndex)) {
+                        cout << "Invalid message index." << endl;
+                        break;
+                    }
+                    break;
+                }
+                case 3: {
+                    int index;
+                    cout << "Delete message #: ";
+                    cin >> index;
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+                    if (!chat->deleteMessage(index - 1, getCurrentUsername()))
+                        cout << "Cannot delete that message.\n";
+
+                    break;
+                }
+
+                case 4: {
+                    string keyword;
+                    cout << "Keyword: ";
+                    getline(cin, keyword);
+
+                    vector<Message> results = chat->searchMessages(keyword);
+
+                    if (results.empty()) {
+                        cout << "No matching messages.\n";
+                    } else {
+                        cout << "\nResults:\n";
+                        for (const Message& msg : results)
+                            msg.display();
+                    }
+                    break;
+                }
+                case 5:
+                    if (group) {
+                        groupSettings(group);
+                    } else {
+                        inChat = false;
+                    }
+                    break;
+
+                case 6:
+                    if (group) {
+                        inChat = false;
+                    } else {
+                        cout << "Invalid choice. Please try again.\n";
+                    }
+                    break;
+
+                default:
+                    cout << "Invalid choice. Please try again.\n";
+            }
+        }
+        users[currentUserIndex].updateLastSeen();
+    }
+
+    void groupSettings(GroupChat* group) {
+        if (!group->isAdmin(getCurrentUsername())) {
+            cout << "Only group admins can access group settings." << endl;
+            return;
+        }
+
+        bool inSettings = true;
+
+        while (inSettings) {
+            cout << "\n===== Group Settings =====\n";
+            cout << "1. Remove Participant\n";
+            cout << "2. Promote Participant to Admin\n";
+            cout << "3. Back\n";
+            cout << "Choice: ";
+
+            int choice;
+            cin >> choice;
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+            switch (choice) {
+                case 1: {
+                    string username;
+                    cout << "Enter participant username: ";
+                    getline(cin, username);
+
+                    group->removeParticipant(getCurrentUsername(), username);
+                    break;
+                }
+
+                case 2: {
+                    string username;
+                    cout << "Enter participant username: ";
+                    getline(cin, username);
+
+                    group->addAdmin(getCurrentUsername(), username);
+                    break;
+                }
+
+                case 3:
+                    inSettings = false;
+                    break;
+
+                default:
+                    cout << "Invalid choice. Please try again." << endl;
             }
         }
 
-        users[currentUserIndex].updateLastSeen(); // FR5
+        users[currentUserIndex].updateLastSeen();
     }
-    
+
     // ---- SCRUM-32 (menu wiring): let user pick a chat and export it ----
     void exportChat() {
-        if (chats.empty()) {
+        vector<Chat*> myChats;
+
+        for (Chat* chat : chats) {
+            if (chat && chat->isMember(getCurrentUsername()))
+                myChats.push_back(chat);
+        }
+        
+        if (myChats.empty()) {
             cout << "No chats to export." << endl;
             return;
         }
         cout << "\nSelect a chat to export:\n";
-        for (size_t i = 0; i < chats.size(); ++i) {
-            cout << (i + 1) << ". " << chats[i]->getChatName() << "\n";
+        for (size_t i = 0; i < myChats.size(); ++i) {
+            cout << (i + 1) << ". " << myChats[i]->getChatName() << "\n";
         }
         cout << "Choice: ";
         int idx;
         cin >> idx;
-        if (idx < 1 || idx > (int)chats.size()) {
+        if (idx < 1 || idx > (int)myChats.size()) {
             cout << "Invalid choice." << endl;
             return;
         }
@@ -804,7 +995,7 @@ public:
         cout << "Filename: ";
         string filename;
         getline(cin, filename);
-        chats[idx - 1]->exportToFile(filename);
+        myChats[idx - 1]->exportToFile(filename);
         users[currentUserIndex].updateLastSeen(); // FR5
     }
 
@@ -814,6 +1005,53 @@ public:
         loggedIn = false;
     }
 
+    void editAccount() {
+        bool editing = true;
+        while (editing) {
+            cout << "\n--- Edit Account ---\n";
+            cout << "1. Change Status\n";
+            cout << "2. Change Phone Number\n";
+            cout << "3. Change Password\n";
+            cout << "4. Back to Main Menu\n";
+            cout << "Choice: ";
+
+            int choice;
+            cin >> choice;
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+            switch (choice) {
+                case 1: {
+                    string newStatus;
+                    cout << "Enter new status: ";
+                    getline(cin, newStatus);
+                    users[currentUserIndex].setStatus(newStatus);
+                    cout << "Status updated successfully.\n";
+                    break;
+                }
+                case 2: {
+                    string newPhone;
+                    do{
+                        cout << "Enter new phone number: ";
+                        getline(cin, newPhone);
+                    } while (!validatePhone(newPhone, currentUserIndex));
+
+                    users[currentUserIndex].setPhoneNumber(newPhone);
+                    cout << "Phone number updated successfully.\n";
+                    break;
+                }
+                case 3: {
+                    string newPass = getHiddenPassword("Enter new password: ");
+                    users[currentUserIndex].changePassword(newPass);
+                    break;
+                }
+                case 4:
+                    editing = false;
+                    break;
+                default:
+                    cout << "Invalid choice. Please try again.\n";
+            }
+        }
+    }
     void run() {
         while (true) {
             if (!isLoggedIn()) {
@@ -833,71 +1071,13 @@ public:
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
                 switch (choice) {
-                    case 1:
-                        startPrivateChat();
-                        break;
-                    case 2:
-                        createGroup();
-                        break;
-                    case 3:
-                        viewChats();
-                        break;
-                    case 4: {
-                        bool editing = true;
-                        while (editing) {
-                            cout << "\n--- Edit Account ---\n";
-                            cout << "1. Change Status\n";
-                            cout << "2. Change Phone Number\n";
-                            cout << "3. Change Password\n";
-                            cout << "4. Back to Main Menu\n";
-                            cout << "Choice: ";
-
-                            int editChoice;
-                            cin >> editChoice;
-                            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-
-                            switch (editChoice) {
-                                case 1: {
-                                    string newStatus;
-                                    cout << "Enter new status: ";
-                                    getline(cin, newStatus);
-                                    users[currentUserIndex].setStatus(newStatus);
-                                    cout << "Status updated successfully.\n";
-                                    break;
-                                }
-                                case 2: {
-                                    string newPhone;
-                                    do{
-                                        cout << "Enter new phone number: ";
-                                        getline(cin, newPhone);
-                                    } while (!validatePhone(newPhone, currentUserIndex));
-
-                                    users[currentUserIndex].setPhoneNumber(newPhone);
-                                    cout << "Phone number updated successfully.\n";
-                                    break;
-                                }
-                                case 3: {
-                                    string newPass = getHiddenPassword("Enter new password: ");
-                                    users[currentUserIndex].changePassword(newPass);
-                                    break;
-                                }
-                                case 4:
-                                    editing = false;
-                                    break;
-                                default:
-                                    cout << "Invalid choice. Please try again.\n";
-                            }
-                        }
-                        break;
-                    }
-                    case 5:
-                        exportChat();
-                        break;
-                    case 6:
-                        logout();
-                        break;
-                    default:
-                        cout << "Invalid choice. Please try again." << endl;
+                    case 1:startPrivateChat(); break;
+                    case 2:createGroup(); break;
+                    case 3:viewChats(); break;
+                    case 4:editAccount(); break;
+                    case 5:exportChat(); break;
+                    case 6: logout(); break;
+                    default: cout << "Invalid choice. Please try again." << endl;
                 }
             }
         }
