@@ -265,8 +265,39 @@ public:
 
     }
 
+    // ---- FR13: emoji support ----
+    // Looks up `emojiCode` (e.g. ":)", "<3") in the recognized emoji map and,
+    // if found, replaces every occurrence of that literal code inside
+    // `content` with the mapped emoji symbol - modifying content in place.
+    // Unrecognized codes are left untouched (no-op) so callers can safely
+    // pass arbitrary user input without corrupting the message.
     void addEmoji(string emojiCode) {
-        // TODO: Implement emoji support
+        static const vector<pair<string, string>> emojiMap = {
+            {":)", "\U0001F642"},          // slightly smiling face
+            {":(", "\U0001F641"},          // slightly frowning face
+            {":D", "\U0001F600"},          // grinning face
+            {"<3", "\u2764\uFE0F"},        // red heart
+            {":thumbsup:", "\U0001F44D"}   // thumbs up
+        };
+
+        string emoji;
+        for (const auto& entry : emojiMap) {
+            if (entry.first == emojiCode) {
+                emoji = entry.second;
+                break;
+            }
+        }
+
+        if (emoji.empty()) {
+            // Not a recognized code - leave the message content unchanged.
+            return;
+        }
+
+        size_t pos = 0;
+        while ((pos = content.find(emojiCode, pos)) != string::npos) {
+            content.replace(pos, emojiCode.length(), emoji);
+            pos += emoji.length();
+        }
     }
 };
 
