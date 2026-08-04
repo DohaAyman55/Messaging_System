@@ -17,7 +17,10 @@ using namespace std;
 
 // HELPER FUNCTIONS
 bool validatePassword(string pwd) {
-    return pwd.length() >= 6;
+   if (pwd.length() >= 6){
+        return true;
+    }else{
+    return false;}
 }
 
 string getHiddenPassword(const string& prompt) {
@@ -65,7 +68,7 @@ string getHiddenPassword(const string& prompt) {
 }
 
 // ========================
-//        USER CLASS
+//       USER CLASS
 // ========================
 class User {
 private:
@@ -77,6 +80,8 @@ private:
 
 public:
     User() {
+        // TODO: Implement default constructor
+        // FR5 HOOK (please call at end): updateLastSeen();
         username = "";
         password = "";
         phoneNumber = "";
@@ -85,6 +90,8 @@ public:
     }
 
     User(string uname, string pwd, string phone) {
+        // TODO: Implement parameterized constructor
+        // FR5 HOOK (please call at end): updateLastSeen();
         username = uname;
         password = pwd;
         phoneNumber = phone;
@@ -110,12 +117,12 @@ public:
 
     void setStatus(string newStatus) {
         status = newStatus;
-        updateLastSeen();
+        updateLastSeen(); // FR5
     }
 
     void setPhoneNumber(string phone) {
         phoneNumber = phone;
-        updateLastSeen();
+        updateLastSeen(); // FR5
     }
 
     void updateLastSeen() {
@@ -130,21 +137,16 @@ public:
     }
 
     void changePassword(string newPwd) {
-        while (!validatePassword(newPwd)) {
+        while(!validatePassword(newPwd)){
             cout << "Invalid Password. Try Again." << endl;
             getline(cin, newPwd);
         }
 
         this->password = newPwd;
         cout << "Password Changed Successfully!" << endl;
-        updateLastSeen();
+        updateLastSeen(); // FR5
+        return;
     }
-};
-
-// Struct to safely hold reply details without holding pointers to dynamic/vector objects
-struct ReplySnapshot {
-    string sender;
-    string content;
 };
 
 // ========================
@@ -156,15 +158,27 @@ private:
     string content;
     string timestamp;
     string status;
-    bool holdsReply;
-    ReplySnapshot replyData;
+
+    // ---- Reply-safety branch ----
+    // A Message used to store `Message* replyTo`, a raw pointer INTO
+    // Chat::messages (a vector<Message>). That's unsafe for two reasons:
+    //   1) Deleting the original message left the pointer dangling.
+    //   2) Even without any deletion, vector<Message>::push_back() can
+    //      reallocate and move every existing Message in memory, silently
+    //      invalidating every replyTo pointer in the whole chat.
+    // Fix: store a SNAPSHOT of the sender/content being replied to instead
+    // of a pointer to the live object. Nothing to dangle, and the quoted
+    // preview keeps showing correctly even after the original is deleted.
+    bool isReply;
+    string replyToSender;
+    string replyToContent;
 
 public:
     Message() {
         sender = "";
         content = "";
         status = "";
-        holdsReply = false;
+        isReply = false;
         updateTimestamp();
     }
     
@@ -172,7 +186,7 @@ public:
         sender = sndr;
         content = cntnt;
         status = "Sent";
-        holdsReply = false;
+        isReply = false;
         updateTimestamp();
     }
 
@@ -193,11 +207,15 @@ public:
     }
 
     bool hasReply() const {
-        return holdsReply;
+        return isReply;
     }
 
-    ReplySnapshot getReplyData() const {
-        return replyData;
+    string getReplyToSender() const {
+        return replyToSender;
+    }
+
+    string getReplyToContent() const {
+        return replyToContent;
     }
 
     void setStatus(string newStatus) {
@@ -208,24 +226,31 @@ public:
         status = "Read";
     }
 
-    // Capture the target message snapshot directly to detach lifecycle dependency
-    void setReplyTo(const Message& msg) {
-        replyData.sender = msg.getSender();
-        replyData.content = msg.getContent();
-        holdsReply = true;
+    // Takes a snapshot of `original` (sender + content) at the moment of
+    // replying. Deliberately NOT a pointer/reference kept for later use -
+    // this message owns its own copy, so it survives the original being
+    // deleted, edited, or the vector it lived in being reallocated.
+    void setReplyTo(const Message& original) {
+        isReply = true;
+        replyToSender = original.getSender();
+        replyToContent = original.getContent();
+    }
+
+    void clearReply() {
+        isReply = false;
+        replyToSender = "";
+        replyToContent = "";
     }
 
     void updateTimestamp() {
-        time_t now = time(nullptr);
-        string t = ctime(&now);
-        if (!t.empty() && t.back() == '\n') t.pop_back();
-        timestamp = t;
+        // TODO: Implement timestamp update
+        // FR7
     }
 
     void display() const {
-        if (holdsReply) {
-            cout << "   \u21B3 Replying to " << replyData.sender
-                 << ": \"" << replyData.content << "\"" << endl;
+        if (isReply) {
+            cout << "  \u21B3 Replying to " << replyToSender
+                << ": \"" << replyToContent << "\"" << endl;
         }
 
         string icon = "✓";
@@ -237,11 +262,16 @@ public:
         }
 
         cout << "[" << timestamp << "] " << sender << ": " << content << " " << icon << endl;
+
+    }
+
+    void addEmoji(string emojiCode) {
+        // TODO: Implement emoji support
     }
 };
 
 // ========================
-//        CHAT CLASS (BASE)
+//       CHAT CLASS (BASE)
 // ========================
 class Chat {
 protected:
@@ -261,6 +291,8 @@ public:
         chatName = name;
     }
     
+    // ---- SCRUM-34: virtual so `delete chatPtr` runs the right destructor
+    //      for PrivateChat / GroupChat (prevents UB and leaks) ----
     virtual ~Chat() {}
 
     bool isMember(const string& username) const {
@@ -281,6 +313,24 @@ public:
     void addMessage(const Message& msg) {
         messages.push_back(msg);
         messages[messages.size() - 1].setStatus("Delivered");
+        // TODO: Implement message addition
+    }
+
+    // ---- Reply-safety branch ----
+    // Overload for sending a message that replies to an existing message
+    // in this chat. `replyToIndex` is looked up and its sender/content are
+    // snapshotted into the new message via Message::setReplyTo() BEFORE
+    // the new message is stored - no pointer into `messages` is ever kept.
+    // Returns false if replyToIndex is out of range.
+    bool addMessage(const Message& msg, int replyToIndex) {
+        if (replyToIndex < 0 || replyToIndex >= (int)messages.size()) {
+            return false;
+        }
+        Message newMsg = msg;
+        newMsg.setReplyTo(messages[replyToIndex]);
+        messages.push_back(newMsg);
+        messages.back().setStatus("Delivered");
+        return true;
     }
 
     bool deleteMessage(int index, const string& username) {
@@ -291,8 +341,12 @@ public:
             return false;
         }
 
-        // Erasing from vector invalidates iterators/indexes, 
-        // but existing Message replySnapshots remain completely untouched!
+        // ---- Reply-safety branch ----
+        // Replies no longer hold a pointer into `messages`, so there is no
+        // dangling-pointer cleanup to do here anymore: any message that
+        // replied to messages[index] already has its own private copy of
+        // that message's sender/content and keeps displaying it correctly
+        // after this erase.
         messages.erase(messages.begin() + index);
         return true;
     }
@@ -304,6 +358,7 @@ public:
         }
     }
     
+    // Accessor used by the export-chat menu option
     string getChatName() const {
         return chatName;
     }
@@ -318,6 +373,7 @@ public:
         return results;
     }
     
+    // ---- SCRUM-32: export chat to file ----
     void exportToFile(const string& filename) const {
         ofstream out(filename);
         if (!out.is_open()) {
@@ -332,10 +388,6 @@ public:
         }
         out << "\n\n";
         for (const Message& m : messages) {
-            if (m.hasReply()) {
-                out << "   [Replying to " << m.getReplyData().sender 
-                    << ": \"" << m.getReplyData().content << "\"]\n";
-            }
             out << "[" << m.getTimestamp() << "] "
                 << m.getSender() << ": " << m.getContent() << "\n";
         }
@@ -345,7 +397,7 @@ public:
 };
 
 // ========================
-//      PRIVATE CHAT CLASS
+//     PRIVATE CHAT CLASS
 // ========================
 class PrivateChat : public Chat {
 private:
@@ -361,9 +413,14 @@ public:
 
     void displayChat() const override {
         cout << "\n--- Private Chat: " << user1 << " & " << user2 << " ---\n";
-        for (size_t i = 0; i < messages.size(); i++) {
+        for (int i = 0; i < messages.size(); i++) {
             messages[i].display();
+            // TODO: Implement private chat display
         }
+    }
+
+    void showTypingIndicator(const string& username) const {
+        // TODO: Implement typing indicator
     }
 };
 
@@ -382,9 +439,20 @@ public:
             admins.push_back(creator); 
     }
 
+    void addAdmin(string newAdmin) {
+        // TODO: Implement add admin
+    }
+
+    bool removeParticipant(const string& admin, const string& userToRemove) {
+        // TODO: Implement remove participant
+        return false;
+    }
+
     bool isAdmin(string username) const {
         for (const auto& a : admins) {
-            if (a == username) return true;
+            if (a == username) {
+                return true;
+            }
         }
         return false;
     }
@@ -405,7 +473,7 @@ public:
         cout << "\nGroup: " << chatName << endl;
         cout << "Participants: ";
         for (const auto& p : participants) {
-            cout << p << " ";
+            cout << p << endl;
         }
         cout << endl;
         cout << "Admins: ";
@@ -417,10 +485,18 @@ public:
 
         Chat::displayChat();
     } 
+
+    void sendJoinRequest(const string& username) {
+        if (isParticipant(username)) {
+        cout << username << " is already a participant in this group." << endl;
+        return;
+    }
+        cout << username << " has requested to join the group \"" << chatName << "\"." << endl;
+    }
 };
 
 // ========================
-//     WHATSAPP APP CLASS
+//    WHATSAPP APP CLASS
 // ========================
 class WhatsApp {
 private:
@@ -452,6 +528,7 @@ private:
 public:
     WhatsApp() : currentUserIndex(-1) {}
 
+    // ---- SCRUM-34: release all Chat* allocations (SRS §7.5, §10.5) ----
     ~WhatsApp() {
         for (Chat* c : chats) {
             delete c;
@@ -486,18 +563,20 @@ public:
 
         newUser = User(uname, pwd, phone);
         users.push_back(newUser);
+        cout << "User registered successfully! You can now log in." << endl;
     }
 
     bool validateUsername(string uname) {
-        for (User user: users) {
-            if (user.getUsername() == uname) {
+        for(User user: users){
+            if(user.getUsername() == uname){
                 return false;
             }
         }
         return true;
     }
     
-    bool validatePhone(string phone, int excludeUserIndex = -1) {
+    bool validatePhone(string phone, int excludeUserIndex  = -1) {
+  
         if (phone.length() != 11) {
             cout << "Phone number must be 11 digits long." << endl;
             return false;
@@ -519,6 +598,11 @@ public:
     }
 
     void login() {
+        // TODO: Implement user login
+        // FR5 HOOK (please call after successful auth):
+        //   users[currentUserIndex].updateLastSeen();
+        // set logged in to true and currentUserIndex to the index of 
+        // the logged-in user using findUserIndex()
         string uname, pwd;
         cout << "\n=== User Login ===\n";
         cout << "Enter Username: ";
@@ -544,18 +628,27 @@ public:
         }
     }
 
+    void startPrivateChat() {
+        // TODO: Implement private chat creation
+        // FR5 HOOK (please call at end):
+        //   users[currentUserIndex].updateLastSeen();
+    }
+
     void createGroup() {
+        // TODO: Implement group creation
+        // FR17: Groups require a name and at least 2 participants
         vector<string> participants;
         string groupName;
         string description;
         
-        cout << "Enter Group Name: ";
-        getline(cin, groupName);
+        // FR17
+        // Get group name and participants from user input
+        // ensure that input usernames exist 
 
         if (find(participants.begin(), participants.end(), getCurrentUsername()) == participants.end()) {
             participants.push_back(getCurrentUsername());
         }
-
+        // check for empty group name and at least 2 participants
         if (groupName.empty()) {
             cout << "Group name cannot be empty." << endl;
             return;
@@ -568,10 +661,16 @@ public:
         GroupChat* newGroup = new GroupChat(participants, groupName, description, getCurrentUsername());
         chats.push_back(newGroup);
 
+        // FR5 HOOK (please call at end):
         users[currentUserIndex].updateLastSeen();
     }
 
     void viewChats() const {
+        // TODO: Implement chat viewing
+        // FR5 NOTE: method is `const`; drop `const` if you want lastSeen refreshed here.
+        // FR10: set messages as read when viewing a chat
+        // FR23: Display all participants and admins when viewing a group
+
         string current = getCurrentUsername();
         for (Chat* chat : chats) {
             if (chat && chat->isMember(current)) {
@@ -581,6 +680,7 @@ public:
         }
     }
     
+    // ---- SCRUM-32 (menu wiring): let user pick a chat and export it ----
     void exportChat() {
         if (chats.empty()) {
             cout << "No chats to export." << endl;
@@ -602,7 +702,7 @@ public:
         string filename;
         getline(cin, filename);
         chats[idx - 1]->exportToFile(filename);
-        users[currentUserIndex].updateLastSeen();
+        users[currentUserIndex].updateLastSeen(); // FR5
     }
 
     void logout() {
@@ -624,19 +724,22 @@ public:
                 else if (choice == 3) break;
             }
             else {
-                cout << "\n1. Create Group\n2. View Chats\n3. Edit Account\n4. Export Chat\n5. Logout\nChoice: ";
+                cout << "\n1. Start Private Chat\n2. Create Group\n3. View Chats\n4. Edit Account\n5. Export Chat\n6. Logout\nChoice: ";
                 int choice;
                 cin >> choice;
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
                 switch (choice) {
                     case 1:
-                        createGroup();
+                        startPrivateChat();
                         break;
                     case 2:
+                        createGroup();
+                        break;
+                    case 3:
                         viewChats();
                         break;
-                    case 3: {
+                    case 4: {
                         bool editing = true;
                         while (editing) {
                             cout << "\n--- Edit Account ---\n";
@@ -661,7 +764,7 @@ public:
                                 }
                                 case 2: {
                                     string newPhone;
-                                    do {
+                                    do{
                                         cout << "Enter new phone number: ";
                                         getline(cin, newPhone);
                                     } while (!validatePhone(newPhone, currentUserIndex));
@@ -684,10 +787,10 @@ public:
                         }
                         break;
                     }
-                    case 4:
+                    case 5:
                         exportChat();
                         break;
-                    case 5:
+                    case 6:
                         logout();
                         break;
                     default:
