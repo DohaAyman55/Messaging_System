@@ -119,10 +119,6 @@ public:
     }
     
     string getContent() const {
-      messagesstatus
-        // TODO: Implement getter
-
- main
         return content;
     }
     
@@ -143,8 +139,6 @@ public:
     }
     
     void setStatus(string newStatus) {
-        status = newStatus
-        // TODO: Implement setter
         status = newStatus;
     }
 
@@ -162,18 +156,6 @@ public:
     }
     
     void display() const {
-      messagesstatus
-        string icon = "✓";
-    if (status == "Delivered") {
-        icon = "✓✓";
-    }
-    else if (status == "Read") {
-        icon = "✓✓ (Read)";
-    }
-
-    cout << "[" << timestamp << "] " << sender << ": " << content << "  " << icon << endl;
-        // TODO: Implement message display
-
         if (replyTo != nullptr) {
             cout << "  \u21B3 Replying to " << replyTo->getSender()
                 << ": \"" << replyTo->getContent() << "\"" << endl;
@@ -323,9 +305,10 @@ public:
     
     void displayChat() const override {
         cout << "\n--- Private Chat: " << user1 << " & " << user2 << " ---\n";
-    for (int i = 0; i < messages.size(); i++) {
-        messages[i].display();
-        // TODO: Implement private chat display
+        for (int i = 0; i < messages.size(); i++) {
+            messages[i].display();
+            // TODO: Implement private chat display
+        }
     }
     
     void showTypingIndicator(const string& username) const {
