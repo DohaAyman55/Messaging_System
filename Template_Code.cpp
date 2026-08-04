@@ -466,18 +466,51 @@ public:
             admins.push_back(creator); 
     }
 
-    void addAdmin(string newAdmin) {
-        // TODO: Implement add admin
+    void addAdmin(const string& admin, string newAdmin) {
+        if (!isAdmin(admin)) {
+            cout << "Only admins can promote participants to admin." << endl;
+            return;
+        }
+        else{
+            if (isParticipant(newAdmin) && !isAdmin(newAdmin)) {
+                admins.push_back(newAdmin);
+                cout << newAdmin << " has been promoted to admin." << endl;
+            } else if (!isParticipant(newAdmin)) {
+                cout << "User is not a participant in the group." << endl;
+            } else {
+                cout << "User is already an admin." << endl;
+            }
+        }
     }
 
     bool removeParticipant(const string& admin, const string& userToRemove) {
-        // TODO: Implement remove participant
+        if(!isAdmin(admin)){
+            cout << "Only admins can remove participants." << endl;
+            return false;
+        }
+        else if (isAdmin(userToRemove)) {
+            cout << "Cannot remove an admin from the group." << endl;
+            return false;
+        }
+        else if (!isParticipant(userToRemove)) {
+            cout << "User not found in the group." << endl;
+            return false;
+        }
+        else {
+            for (int i = 0; i < participants.size(); i++) {
+                if (participants[i] == userToRemove) {
+                    participants.erase(participants.begin() + i);
+                    cout << "Participant removed successfully." << endl;
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
     bool isAdmin(string username) const {
-        for (const auto& a : admins) {
-            if (a == username) {
+        for (const auto& admin : admins) {
+            if (admin == username) {
                 return true;
             }
         }
