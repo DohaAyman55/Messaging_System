@@ -688,9 +688,24 @@ public:
     }
 
     void startPrivateChat() {
-        // TODO: Implement private chat creation
-        
-        // FR5 HOOK (please call at end):
+        string username;
+
+        cout << "Enter the username to start a private chat with: ";
+        getline(cin, username);
+
+        if (username == getCurrentUsername()) {
+            cout << "You cannot start a chat with yourself." << endl;
+        }
+        else if (findUserIndex(username) == -1) {
+            cout << "User does not exist." << endl;
+        }
+        else {
+            Chat* newChat = new PrivateChat(getCurrentUsername(), username);
+            chats.push_back(newChat);
+
+            cout << "Private chat created successfully with " << username << "." << endl;
+        }
+
         users[currentUserIndex].updateLastSeen();
     }
 
