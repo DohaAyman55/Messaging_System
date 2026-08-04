@@ -379,7 +379,11 @@ public:
     } 
 
     void sendJoinRequest(const string& username) {
-        // TODO: Implement join request
+        if (isParticipant(username)) {
+        cout << username << " is already a participant in this group." << endl;
+        return;
+    }
+        cout << username << " has requested to join the group \"" << chatName << "\"." << endl;
     }
 };
 
