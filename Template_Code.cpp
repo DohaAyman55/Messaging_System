@@ -25,58 +25,65 @@ private:
     string phoneNumber;
     string status;
     string lastSeen;
-    
+
 public:
     User() {
         // TODO: Implement default constructor
         // FR5 HOOK (please call at end): updateLastSeen();
+        username = "";
+        password = "";
+        phoneNumber = "";
+        status = "";
+        updateLastSeen();
     }
-    
+
     User(string uname, string pwd, string phone) {
         // TODO: Implement parameterized constructor
         // FR5 HOOK (please call at end): updateLastSeen();
+        username = uname;
+        password = pwd;
+        phoneNumber = phone;
+        status = "Hey there! I am using WhatsApp.";
+        updateLastSeen();
     }
-    
+
     string getUsername() const {
         return username;
     }
-    
+
     string getPhoneNumber() const {
         return phoneNumber;
     }
-    
+
     string getStatus() const {
          return status;
     }
-    
+
     string getLastSeen() const {
         return lastSeen;
     }
-    
+
     void setStatus(string newStatus) {
         status = newStatus;
         updateLastSeen(); // FR5
     }
-    
+
     void setPhoneNumber(string phone) {
         phoneNumber = phone;
         updateLastSeen(); // FR5
     }
-    
+
     void updateLastSeen() {
         time_t now = time(nullptr);
         string t = ctime(&now);
         if (!t.empty() && t.back() == '\n') t.pop_back();
         lastSeen = t;
     }
-    
+
     bool checkPassword(string pwd) const {
-        if (pwd == password) {
-            return true;
-        }
-        return false;
+        return password == pwd;
     }
-    
+
     void changePassword(string newPwd) {
         while(!validatePassword(newPwd)){
             cout << "Invalid Password. Try Again." << endl;
@@ -100,7 +107,7 @@ private:
     string timestamp;
     string status;
     Message* replyTo;
-    
+
 public:
     Message() {
         sender = "";
@@ -117,27 +124,27 @@ public:
         replyTo = nullptr;
         updateTimestamp();
     }
-    
+
     string getContent() const {
         return content;
     }
-    
+
     string getSender() const {
         return sender;
     }
-    
+
     string getTimestamp() const {
         return timestamp;
     }
-    
+
     string getStatus() const {
         return status;
     }
-    
+
     Message* getReplyTo() const {
         return replyTo;
     }
-    
+
     void setStatus(string newStatus) {
         status = newStatus;
     }
@@ -145,16 +152,16 @@ public:
     void markAsRead() {
         status = "Read";
     }
-    
+
     void setReplyTo(Message* msg) {
         replyTo = msg;
     }
-    
+
     void updateTimestamp() {
         // TODO: Implement timestamp update
         // FR7
     }
-    
+
     void display() const {
         if (replyTo != nullptr) {
             cout << "  \u21B3 Replying to " << replyTo->getSender()
@@ -172,7 +179,7 @@ public:
         cout << "[" << timestamp << "] " << sender << ": " << content << " " << icon << endl;
 
     }
-    
+
     void addEmoji(string emojiCode) {
         // TODO: Implement emoji support
     }
@@ -186,14 +193,14 @@ protected:
     vector<string> participants;
     vector<Message> messages;
     string chatName;
-    
+
 public:
     Chat() {
         participants = {};
         messages = {};
         chatName = "";
     }
-    
+
     Chat(vector<string> users, string name) {
         participants = users;
         chatName = name;
@@ -217,13 +224,13 @@ public:
             }
         }
     }
-    
+
     void addMessage(const Message& msg) {
         messages.push_back(msg);
-    messages[messages.size() - 1].setStatus("Delivered");
+        messages[messages.size() - 1].setStatus("Delivered");
         // TODO: Implement message addition
     }
-    
+
     bool deleteMessage(int index, const string& username) {
         if (index < 0 || index >= (int)messages.size()) {
             return false;
@@ -242,7 +249,7 @@ public:
         messages.erase(messages.begin() + index);
         return true;
     }
-    
+
     virtual void displayChat() const {
         cout << chatName << endl;
         for (const Message& msg : messages) {
@@ -254,7 +261,7 @@ public:
     string getChatName() const {
         return chatName;
     }
-    
+
     vector<Message> searchMessages(string keyword) const {
         vector<Message> results;
         for (const Message& m : messages) {
@@ -295,14 +302,14 @@ class PrivateChat : public Chat {
 private:
     string user1;
     string user2;
-    
+
 public:
     PrivateChat(string u1, string u2) 
         : Chat({u1, u2}, "Chat between " + u1 + " and " + u2) {
        user1 = u1;
        user2 = u2;
     }
-    
+
     void displayChat() const override {
         cout << "\n--- Private Chat: " << user1 << " & " << user2 << " ---\n";
         for (int i = 0; i < messages.size(); i++) {
@@ -310,7 +317,7 @@ public:
             // TODO: Implement private chat display
         }
     }
-    
+
     void showTypingIndicator(const string& username) const {
         // TODO: Implement typing indicator
     }
@@ -323,23 +330,23 @@ class GroupChat : public Chat {
 private:
     vector<string> admins;
     string description;
-    
+
 public:
     GroupChat(vector<string> users, string name, string description, string creator) 
         : Chat(users, name) { 
             this->description = description;
             admins.push_back(creator); 
     }
-    
+
     void addAdmin(string newAdmin) {
         // TODO: Implement add admin
     }
-    
+
     bool removeParticipant(const string& admin, const string& userToRemove) {
         // TODO: Implement remove participant
         return false;
     }
-    
+
     bool isAdmin(string username) const {
         for (const auto& a : admins) {
             if (a == username) {
@@ -348,7 +355,7 @@ public:
         }
         return false;
     }
-    
+
     bool isParticipant(string username) const {
         return isMember(username);
     }
@@ -360,7 +367,7 @@ public:
     void setDescription(string desc) {
         description = desc;
     }
-    
+
     void displayChat() const override {
         cout << "\nGroup: " << chatName << endl;
         cout << "Participants: ";
@@ -401,21 +408,21 @@ private:
         // TODO: Implement user search
         return -1;
     }
-    
+
     bool isLoggedIn() const {
         return loggedIn;
     }
-    
+
     string getCurrentUsername() const {
         if (isLoggedIn()) {
             return users[currentUserIndex].getUsername();
         }
         return "";
     }
-    
+
 public:
     WhatsApp() : currentUserIndex(-1) {}
-    
+
     // ---- SCRUM-34: release all Chat* allocations (SRS §7.5, §10.5) ----
     ~WhatsApp() {
         for (Chat* c : chats) {
@@ -423,12 +430,50 @@ public:
         }
         chats.clear();
     }
-    
+
     void signUp() {
         // TODO: Implement user registration
-        // use validateUsername() to check username uniqueness
+        User newUser;
+        string uname, pwd, phone;
+        bool IsValidPassword = false;
+        bool IsValidUsername = false;
+        bool IsValidPhone = false;
+        bool IsValidUserInputs = false;
+
+        do {
+            cout << "Enter username: ";
+            getline(cin, uname);
+            IsValidUsername = validateUsername(uname);
+            if (!IsValidUsername) {
+                cout << "Invalid username. Please try again." << endl;
+            }
+        } while (!IsValidUsername);
+        do {
+            cout << "Enter password: ";
+            getline(cin, pwd);
+            IsValidPassword = validatePassword(pwd);
+            if (!IsValidPassword) {
+                cout << "Invalid password. Please try again." << endl;
+            }
+        } while (!IsValidPassword);
+        do {
+            cout << "Enter phone number: ";
+            getline(cin, phone);
+            IsValidPhone = validatePhone(phone);
+            if (!IsValidPhone) {
+                cout << "Invalid phone number. Please try again." << endl;
+            }
+        } while (!IsValidPhone);
+ 
+        IsValidUserInputs = IsValidPassword && IsValidUsername && IsValidPhone;
+     
+        
+        if (IsValidUserInputs) {
+            newUser = User(uname, pwd, phone);
+            users.push_back(newUser);
+        }
     }
-    
+
     bool validateUsername(string uname) {
         for(User user: users){
             if(user.getUsername() == uname){
@@ -438,7 +483,7 @@ public:
         return true;
     }
     
-    bool validatePhone(string phone, int excludeUserIndex = -1) {
+    bool validatePhone(string phone, int excludeUserIndex  = -1) {
   
         if (phone.length() != 11) {
             cout << "Phone number must be 11 digits long." << endl;
@@ -448,7 +493,7 @@ public:
             cout << "Phone number must start with '01'." << endl;
             return false;
         }
-         
+
         for (size_t i = 0; i < users.size(); ++i) {
             if ((int)i == excludeUserIndex) continue;
             if (users[i].getPhoneNumber() == phone) {
@@ -456,10 +501,10 @@ public:
                 return false;
             }
         }
-                
+
         return true;
     }
-    
+
     void login() {
         // TODO: Implement user login
         // FR5 HOOK (please call after successful auth):
@@ -491,13 +536,13 @@ public:
             cout << "[Error] Incorrect password!\n";
         }
     }
-    
+
     void startPrivateChat() {
         // TODO: Implement private chat creation
         // FR5 HOOK (please call at end):
         //   users[currentUserIndex].updateLastSeen();
     }
-    
+
     void createGroup() {
         // TODO: Implement group creation
         // FR17: Groups require a name and at least 2 participants
@@ -528,7 +573,7 @@ public:
         // FR5 HOOK (please call at end):
         users[currentUserIndex].updateLastSeen();
     }
-    
+
     void viewChats() const {
         // TODO: Implement chat viewing
         // FR5 NOTE: method is `const`; drop `const` if you want lastSeen refreshed here.
@@ -568,20 +613,20 @@ public:
         chats[idx - 1]->exportToFile(filename);
         users[currentUserIndex].updateLastSeen(); // FR5
     }
-    
+
     void logout() {
         users[currentUserIndex].updateLastSeen();
         currentUserIndex = -1;
         loggedIn = false;
     }
-    
+
     void run() {
         while (true) {
             if (!isLoggedIn()) {
                 cout << "\n1. Login\n2. Sign Up\n3. Exit\nChoice: ";
                 int choice;
                 cin >> choice;
-                
+
                 if (choice == 1) login();
                 else if (choice == 2) signUp();
                 else if (choice == 3) break;
