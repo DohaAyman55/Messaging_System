@@ -80,7 +80,6 @@ private:
 
 public:
     User() {
-        // TODO: Implement default constructor
         // FR5 HOOK (please call at end): updateLastSeen();
         username = "";
         password = "";
@@ -90,7 +89,6 @@ public:
     }
 
     User(string uname, string pwd, string phone) {
-        // TODO: Implement parameterized constructor
         // FR5 HOOK (please call at end): updateLastSeen();
         username = uname;
         password = pwd;
@@ -243,8 +241,10 @@ public:
     }
 
     void updateTimestamp() {
-        // TODO: Implement timestamp update
-        // FR7
+        time_t now = time(nullptr);
+        string t = ctime(&now);
+        if (!t.empty() && t.back() == '\n') t.pop_back();
+        timestamp = t;
     }
 
     void display() const {
@@ -344,7 +344,6 @@ public:
     void addMessage(const Message& msg) {
         messages.push_back(msg);
         messages[messages.size() - 1].setStatus("Delivered");
-        // TODO: Implement message addition
     }
 
     // ---- Reply-safety branch ----
@@ -444,10 +443,7 @@ public:
 
     void displayChat() const override {
         cout << "\n--- Private Chat: " << user1 << " & " << user2 << " ---\n";
-        for (int i = 0; i < messages.size(); i++) {
-            messages[i].display();
-            // TODO: Implement private chat display
-        }
+        Chat::displayChat();
     }
 
     void showTypingIndicator(const string& username) const {
@@ -629,7 +625,6 @@ public:
     }
 
     void login() {
-        // TODO: Implement user login
         // FR5 HOOK (please call after successful auth):
         //   users[currentUserIndex].updateLastSeen();
         // set logged in to true and currentUserIndex to the index of 
@@ -661,21 +656,39 @@ public:
 
     void startPrivateChat() {
         // TODO: Implement private chat creation
+        
         // FR5 HOOK (please call at end):
-        //   users[currentUserIndex].updateLastSeen();
+        users[currentUserIndex].updateLastSeen();
     }
 
     void createGroup() {
-        // TODO: Implement group creation
-        // FR17: Groups require a name and at least 2 participants
         vector<string> participants;
         string groupName;
         string description;
-        
-        // FR17
-        // Get group name and participants from user input
-        // ensure that input usernames exist 
 
+        cout << "Enter group name: ";
+        getline(cin, groupName);
+        cout << "Enter group description: ";
+        getline(cin, description);
+
+        while(true) {
+            string participant;
+            cout << "Enter participant username (or 'done' to finish): ";
+            getline(cin, participant);
+            if (participant == "done") break;
+            if (find(participants.begin(), participants.end(), participant) != participants.end()) {
+                cout << "Participant already added." << endl;
+                continue;
+            }
+            // ensure that input usernames exist 
+            if (findUserIndex(participant) == -1) {
+                cout << "User does not exist." << endl;
+                continue;
+            }
+            participants.push_back(participant);
+        }
+
+        // ensure the current user is also a participant
         if (find(participants.begin(), participants.end(), getCurrentUsername()) == participants.end()) {
             participants.push_back(getCurrentUsername());
         }
@@ -697,7 +710,6 @@ public:
     }
 
     void viewChats() const {
-        // TODO: Implement chat viewing
         // FR5 NOTE: method is `const`; drop `const` if you want lastSeen refreshed here.
         // FR10: set messages as read when viewing a chat
         // FR23: Display all participants and admins when viewing a group
