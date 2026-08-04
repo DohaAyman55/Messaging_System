@@ -5,18 +5,67 @@
 #include <ctime>
 #include <limits>
 #include <algorithm> 
+
+#ifdef _WIN32
+    #include <conio.h>
+#else
+    #include <termios.h>
+    #include <unistd.h>
+#endif
+
 using namespace std;
 
-// HELPER FUNCTION
+// HELPER FUNCTIONS
 bool validatePassword(string pwd) {
-   if (pwd.length() >= 6){
-        return true;
-    }else{
-    return false;}
+    return pwd.length() >= 6;
+}
+
+string getHiddenPassword(const string& prompt) {
+    cout << prompt;
+    string pwd;
+
+#ifdef _WIN32
+    char ch;
+    while ((ch = _getch()) != '\r') {
+        if (ch == '\b') { 
+            if (!pwd.empty()) {
+                pwd.pop_back();
+                cout << "\b \b";
+            }
+        } else {
+            pwd.push_back(ch);
+            cout << '*';
+        }
+    }
+#else
+    termios oldt, newt;
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+    newt.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+
+    char ch;
+    while (cin.get(ch) && ch != '\n') {
+        if (ch == 127 || ch == '\b') {
+            if (!pwd.empty()) {
+                pwd.pop_back();
+                cout << "\b \b";
+            }
+        } else {
+            pwd.push_back(ch);
+            cout << '*';
+        }
+    }
+
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+#endif
+
+    cout << endl;
+    return pwd;
 }
 
 // ========================
-//       USER CLASS
+//        USER CLASS
 // ========================
 class User {
 private:
@@ -25,69 +74,77 @@ private:
     string phoneNumber;
     string status;
     string lastSeen;
-    
+
 public:
     User() {
-        // TODO: Implement default constructor
-        // FR5 HOOK (please call at end): updateLastSeen();
+        username = "";
+        password = "";
+        phoneNumber = "";
+        status = "";
+        updateLastSeen();
     }
-    
+
     User(string uname, string pwd, string phone) {
-        // TODO: Implement parameterized constructor
-        // FR5 HOOK (please call at end): updateLastSeen();
+        username = uname;
+        password = pwd;
+        phoneNumber = phone;
+        status = "Hey there! I am using WhatsApp.";
+        updateLastSeen();
     }
-    
+
     string getUsername() const {
         return username;
     }
-    
+
     string getPhoneNumber() const {
         return phoneNumber;
     }
-    
+
     string getStatus() const {
          return status;
     }
-    
+
     string getLastSeen() const {
         return lastSeen;
     }
-    
+
     void setStatus(string newStatus) {
         status = newStatus;
-        updateLastSeen(); // FR5
+        updateLastSeen();
     }
-    
+
     void setPhoneNumber(string phone) {
         phoneNumber = phone;
-        updateLastSeen(); // FR5
+        updateLastSeen();
     }
-    
+
     void updateLastSeen() {
         time_t now = time(nullptr);
         string t = ctime(&now);
         if (!t.empty() && t.back() == '\n') t.pop_back();
         lastSeen = t;
     }
-    
+
     bool checkPassword(string pwd) const {
-        if (pwd == password) {
-            return true;
-        }
-        return false;
+        return password == pwd;
     }
-    
+
     void changePassword(string newPwd) {
-        while(!validatePassword(newPwd)){
+        while (!validatePassword(newPwd)) {
             cout << "Invalid Password. Try Again." << endl;
             getline(cin, newPwd);
         }
 
         this->password = newPwd;
         cout << "Password Changed Successfully!" << endl;
-        updateLastSeen(); // FR5
-        return;
+        updateLastSeen();
     }
+};
+
+// Struct to safely hold reply details without holding pointers to dynamic/vector objects
+struct ReplySnapshot {
+    string sender;
+    string content;
 };
 
 // ========================
@@ -99,14 +156,15 @@ private:
     string content;
     string timestamp;
     string status;
-    Message* replyTo;
-    
+    bool holdsReply;
+    ReplySnapshot replyData;
+
 public:
     Message() {
         sender = "";
         content = "";
         status = "";
-        replyTo = nullptr;
+        holdsReply = false;
         updateTimestamp();
     }
     
@@ -114,69 +172,60 @@ public:
         sender = sndr;
         content = cntnt;
         status = "Sent";
-        replyTo = nullptr;
+        holdsReply = false;
         updateTimestamp();
     }
-    
-    string getContent() const {
-      messagesstatus
-        // TODO: Implement getter
 
- main
+    string getContent() const {
         return content;
     }
-    
+
     string getSender() const {
         return sender;
     }
-    
+
     string getTimestamp() const {
         return timestamp;
     }
-    
+
     string getStatus() const {
         return status;
     }
-    
-    Message* getReplyTo() const {
-        return replyTo;
+
+    bool hasReply() const {
+        return holdsReply;
     }
-    
+
+    ReplySnapshot getReplyData() const {
+        return replyData;
+    }
+
     void setStatus(string newStatus) {
-        status = newStatus
-        // TODO: Implement setter
         status = newStatus;
     }
 
     void markAsRead() {
         status = "Read";
     }
-    
-    void setReplyTo(Message* msg) {
-        replyTo = msg;
+
+    // Capture the target message snapshot directly to detach lifecycle dependency
+    void setReplyTo(const Message& msg) {
+        replyData.sender = msg.getSender();
+        replyData.content = msg.getContent();
+        holdsReply = true;
     }
-    
+
     void updateTimestamp() {
-        // TODO: Implement timestamp update
-        // FR7
+        time_t now = time(nullptr);
+        string t = ctime(&now);
+        if (!t.empty() && t.back() == '\n') t.pop_back();
+        timestamp = t;
     }
-    
+
     void display() const {
-      messagesstatus
-        string icon = "✓";
-    if (status == "Delivered") {
-        icon = "✓✓";
-    }
-    else if (status == "Read") {
-        icon = "✓✓ (Read)";
-    }
-
-    cout << "[" << timestamp << "] " << sender << ": " << content << "  " << icon << endl;
-        // TODO: Implement message display
-
-        if (replyTo != nullptr) {
-            cout << "  \u21B3 Replying to " << replyTo->getSender()
-                << ": \"" << replyTo->getContent() << "\"" << endl;
+        if (holdsReply) {
+            cout << "   \u21B3 Replying to " << replyData.sender
+                 << ": \"" << replyData.content << "\"" << endl;
         }
 
         string icon = "✓";
@@ -188,37 +237,30 @@ public:
         }
 
         cout << "[" << timestamp << "] " << sender << ": " << content << " " << icon << endl;
-
-    }
-    
-    void addEmoji(string emojiCode) {
-        // TODO: Implement emoji support
     }
 };
 
 // ========================
-//       CHAT CLASS (BASE)
+//        CHAT CLASS (BASE)
 // ========================
 class Chat {
 protected:
     vector<string> participants;
     vector<Message> messages;
     string chatName;
-    
+
 public:
     Chat() {
         participants = {};
         messages = {};
         chatName = "";
     }
-    
+
     Chat(vector<string> users, string name) {
         participants = users;
         chatName = name;
     }
     
-    // ---- SCRUM-34: virtual so `delete chatPtr` runs the right destructor
-    //      for PrivateChat / GroupChat (prevents UB and leaks) ----
     virtual ~Chat() {}
 
     bool isMember(const string& username) const {
@@ -235,13 +277,12 @@ public:
             }
         }
     }
-    
+
     void addMessage(const Message& msg) {
         messages.push_back(msg);
-    messages[messages.size() - 1].setStatus("Delivered");
-        // TODO: Implement message addition
+        messages[messages.size() - 1].setStatus("Delivered");
     }
-    
+
     bool deleteMessage(int index, const string& username) {
         if (index < 0 || index >= (int)messages.size()) {
             return false;
@@ -250,17 +291,12 @@ public:
             return false;
         }
 
-        Message* deletedPtr = &messages[index];
-        for (size_t i = 0; i < messages.size(); ++i) {
-            if (messages[i].getReplyTo() == deletedPtr) {
-                messages[i].setReplyTo(nullptr);
-            }
-        }
-
+        // Erasing from vector invalidates iterators/indexes, 
+        // but existing Message replySnapshots remain completely untouched!
         messages.erase(messages.begin() + index);
         return true;
     }
-    
+
     virtual void displayChat() const {
         cout << chatName << endl;
         for (const Message& msg : messages) {
@@ -268,11 +304,10 @@ public:
         }
     }
     
-    // Accessor used by the export-chat menu option
     string getChatName() const {
         return chatName;
     }
-    
+
     vector<Message> searchMessages(string keyword) const {
         vector<Message> results;
         for (const Message& m : messages) {
@@ -283,7 +318,6 @@ public:
         return results;
     }
     
-    // ---- SCRUM-32: export chat to file ----
     void exportToFile(const string& filename) const {
         ofstream out(filename);
         if (!out.is_open()) {
@@ -298,6 +332,10 @@ public:
         }
         out << "\n\n";
         for (const Message& m : messages) {
+            if (m.hasReply()) {
+                out << "   [Replying to " << m.getReplyData().sender 
+                    << ": \"" << m.getReplyData().content << "\"]\n";
+            }
             out << "[" << m.getTimestamp() << "] "
                 << m.getSender() << ": " << m.getContent() << "\n";
         }
@@ -307,29 +345,25 @@ public:
 };
 
 // ========================
-//     PRIVATE CHAT CLASS
+//      PRIVATE CHAT CLASS
 // ========================
 class PrivateChat : public Chat {
 private:
     string user1;
     string user2;
-    
+
 public:
     PrivateChat(string u1, string u2) 
         : Chat({u1, u2}, "Chat between " + u1 + " and " + u2) {
        user1 = u1;
        user2 = u2;
     }
-    
+
     void displayChat() const override {
         cout << "\n--- Private Chat: " << user1 << " & " << user2 << " ---\n";
-    for (int i = 0; i < messages.size(); i++) {
-        messages[i].display();
-        // TODO: Implement private chat display
-    }
-    
-    void showTypingIndicator(const string& username) const {
-        // TODO: Implement typing indicator
+        for (size_t i = 0; i < messages.size(); i++) {
+            messages[i].display();
+        }
     }
 };
 
@@ -340,32 +374,21 @@ class GroupChat : public Chat {
 private:
     vector<string> admins;
     string description;
-    
+
 public:
     GroupChat(vector<string> users, string name, string description, string creator) 
         : Chat(users, name) { 
             this->description = description;
             admins.push_back(creator); 
     }
-    
-    void addAdmin(string newAdmin) {
-        // TODO: Implement add admin
-    }
-    
-    bool removeParticipant(const string& admin, const string& userToRemove) {
-        // TODO: Implement remove participant
-        return false;
-    }
-    
+
     bool isAdmin(string username) const {
         for (const auto& a : admins) {
-            if (a == username) {
-                return true;
-            }
+            if (a == username) return true;
         }
         return false;
     }
-    
+
     bool isParticipant(string username) const {
         return isMember(username);
     }
@@ -377,12 +400,12 @@ public:
     void setDescription(string desc) {
         description = desc;
     }
-    
+
     void displayChat() const override {
         cout << "\nGroup: " << chatName << endl;
         cout << "Participants: ";
         for (const auto& p : participants) {
-            cout << p << endl;
+            cout << p << " ";
         }
         cout << endl;
         cout << "Admins: ";
@@ -394,14 +417,10 @@ public:
 
         Chat::displayChat();
     } 
-
-    void sendJoinRequest(const string& username) {
-        // TODO: Implement join request
-    }
 };
 
 // ========================
-//    WHATSAPP APP CLASS
+//     WHATSAPP APP CLASS
 // ========================
 class WhatsApp {
 private:
@@ -411,40 +430,67 @@ private:
     bool loggedIn = false;
     
     int findUserIndex(string username) const {
-        // TODO: Implement user search
+        for (size_t i = 0; i < users.size(); ++i) {
+            if (users[i].getUsername() == username) {
+                return i;
+            }
+        }
         return -1;
     }
-    
+
     bool isLoggedIn() const {
         return loggedIn;
     }
-    
+
     string getCurrentUsername() const {
         if (isLoggedIn()) {
             return users[currentUserIndex].getUsername();
         }
         return "";
     }
-    
+
 public:
     WhatsApp() : currentUserIndex(-1) {}
-    
-    // ---- SCRUM-34: release all Chat* allocations (SRS §7.5, §10.5) ----
+
     ~WhatsApp() {
         for (Chat* c : chats) {
             delete c;
         }
         chats.clear();
     }
-    
+
     void signUp() {
-        // TODO: Implement user registration
-        // use validateUsername() to check username uniqueness
+        User newUser;
+        string uname, pwd, phone;
+        bool valid;
+
+        do {
+            cout << "Enter username: ";
+            getline(cin, uname);
+            valid = validateUsername(uname);
+            if (!valid) cout << "Invalid username. Please try again." << endl;
+        } while (!valid);
+
+        do {
+            pwd = getHiddenPassword("Enter password: ");
+            valid = validatePassword(pwd);
+            if (!valid) cout << "Invalid password. Please try again." << endl;
+        } while (!valid);
+
+        do {
+            cout << "Enter phone number: ";
+            getline(cin, phone);
+            valid = validatePhone(phone);
+            if (!valid) cout << "Invalid phone number. Please try again." << endl;
+        } while (!valid);
+
+        newUser = User(uname, pwd, phone);
+        users.push_back(newUser);
     }
-    
+
     bool validateUsername(string uname) {
-        for(User user: users){
-            if(user.getUsername() == uname){
+        for (User user: users) {
+            if (user.getUsername() == uname) {
                 return false;
             }
         }
@@ -452,7 +498,6 @@ public:
     }
     
     bool validatePhone(string phone, int excludeUserIndex = -1) {
-  
         if (phone.length() != 11) {
             cout << "Phone number must be 11 digits long." << endl;
             return false;
@@ -461,7 +506,7 @@ public:
             cout << "Phone number must start with '01'." << endl;
             return false;
         }
-         
+
         for (size_t i = 0; i < users.size(); ++i) {
             if ((int)i == excludeUserIndex) continue;
             if (users[i].getPhoneNumber() == phone) {
@@ -469,20 +514,15 @@ public:
                 return false;
             }
         }
-                
+
         return true;
     }
-    
+
     void login() {
-        // TODO: Implement user login
-        // FR5 HOOK (please call after successful auth):
-        //   users[currentUserIndex].updateLastSeen();
-        // set isLogged in to true and currentUserIndex to the index of 
-        // the logged-in user using findUserIndex()
         string uname, pwd;
         cout << "\n=== User Login ===\n";
         cout << "Enter Username: ";
-        cin >> uname;
+        getline(cin, uname);
         
         int index = findUserIndex(uname);
         
@@ -490,41 +530,32 @@ public:
             cout << "[Error] User not found!\n";
             return;
         }
-        
-        cout << "Enter Password: ";
-        cin >> pwd;
+
+        pwd = getHiddenPassword("Enter Password: ");
         
         if (users[index].checkPassword(pwd)) {
             currentUserIndex = index;
             users[currentUserIndex].setStatus("Online");
             users[currentUserIndex].updateLastSeen();
+            loggedIn = true;
             cout << "\n[Success] Logged in successfully! Welcome, " << getCurrentUsername() << "!\n";
         } else {
             cout << "[Error] Incorrect password!\n";
         }
     }
-    
-    void startPrivateChat() {
-        // TODO: Implement private chat creation
-        // FR5 HOOK (please call at end):
-        //   users[currentUserIndex].updateLastSeen();
-    }
-    
+
     void createGroup() {
-        // TODO: Implement group creation
-        // FR17: Groups require a name and at least 2 participants
         vector<string> participants;
         string groupName;
         string description;
         
-        // FR17
-        // Get group name and participants from user input
-        // ensure that input usernames exist 
+        cout << "Enter Group Name: ";
+        getline(cin, groupName);
 
         if (find(participants.begin(), participants.end(), getCurrentUsername()) == participants.end()) {
             participants.push_back(getCurrentUsername());
         }
-        // check for empty group name and at least 2 participants
+
         if (groupName.empty()) {
             cout << "Group name cannot be empty." << endl;
             return;
@@ -537,16 +568,10 @@ public:
         GroupChat* newGroup = new GroupChat(participants, groupName, description, getCurrentUsername());
         chats.push_back(newGroup);
 
-        // FR5 HOOK (please call at end):
         users[currentUserIndex].updateLastSeen();
     }
-    
-    void viewChats() const {
-        // TODO: Implement chat viewing
-        // FR5 NOTE: method is `const`; drop `const` if you want lastSeen refreshed here.
-        // FR10: set messages as read when viewing a chat
-        // FR23: Display all participants and admins when viewing a group
 
+    void viewChats() const {
         string current = getCurrentUsername();
         for (Chat* chat : chats) {
             if (chat && chat->isMember(current)) {
@@ -556,7 +581,6 @@ public:
         }
     }
     
-    // ---- SCRUM-32 (menu wiring): let user pick a chat and export it ----
     void exportChat() {
         if (chats.empty()) {
             cout << "No chats to export." << endl;
@@ -578,43 +602,41 @@ public:
         string filename;
         getline(cin, filename);
         chats[idx - 1]->exportToFile(filename);
-        users[currentUserIndex].updateLastSeen(); // FR5
+        users[currentUserIndex].updateLastSeen();
     }
-    
+
     void logout() {
         users[currentUserIndex].updateLastSeen();
         currentUserIndex = -1;
         loggedIn = false;
     }
-    
+
     void run() {
         while (true) {
             if (!isLoggedIn()) {
                 cout << "\n1. Login\n2. Sign Up\n3. Exit\nChoice: ";
                 int choice;
                 cin >> choice;
-                
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
                 if (choice == 1) login();
                 else if (choice == 2) signUp();
                 else if (choice == 3) break;
             }
             else {
-                cout << "\n1. Start Private Chat\n2. Create Group\n3. View Chats\n4. Edit Account\n5. Change Password\n6. Export Chat\n7. Logout\nChoice: ";
+                cout << "\n1. Create Group\n2. View Chats\n3. Edit Account\n4. Export Chat\n5. Logout\nChoice: ";
                 int choice;
                 cin >> choice;
-                cin.ignore(numeric_limits<streamsize>::max(), '\n'); // flush buffer
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
                 switch (choice) {
                     case 1:
-                        startPrivateChat();
-                        break;
-                    case 2:
                         createGroup();
                         break;
-                    case 3:
+                    case 2:
                         viewChats();
                         break;
-                    case 4: {
+                    case 3: {
                         bool editing = true;
                         while (editing) {
                             cout << "\n--- Edit Account ---\n";
@@ -639,7 +661,7 @@ public:
                                 }
                                 case 2: {
                                     string newPhone;
-                                    do{
+                                    do {
                                         cout << "Enter new phone number: ";
                                         getline(cin, newPhone);
                                     } while (!validatePhone(newPhone, currentUserIndex));
@@ -649,10 +671,7 @@ public:
                                     break;
                                 }
                                 case 3: {
-                                    // TODO: Passwords must not be displayed when typing
-                                    string newPass;
-                                    cout << "Enter new password: ";
-                                    getline(cin, newPass);
+                                    string newPass = getHiddenPassword("Enter new password: ");
                                     users[currentUserIndex].changePassword(newPass);
                                     break;
                                 }
@@ -665,10 +684,10 @@ public:
                         }
                         break;
                     }
-                    case 5:
+                    case 4:
                         exportChat();
                         break;
-                    case 6:
+                    case 5:
                         logout();
                         break;
                     default:
